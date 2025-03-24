@@ -1,0 +1,179 @@
+---
+title: "Data Preparation"
+author: "Evelyn Albrecht"
+format: html
+editor: visual
+---
+
+# Setting Up
+
+### Clearing R's environment
+
+```{r}
+rm(list=ls())
+```
+
+### Loading relevant packages
+
+```{r}
+library(tidyverse) #bunch of packages combined to be one 
+library(here) #assists in importing data sets 
+library(vegan) #allows one to reshape dataframes
+library(ggplot2) #for plotting data 
+```
+
+# Data Clean-up
+
+## Road Data
+
+Import the data and give it a name
+
+```{r}
+roads <- read.csv(here("Data","Camera_buffer_roads.csv"))
+```
+
+preview the data
+
+```{r}
+glimpse(roads)
+```
+
+What we intend to use this data for is to determine the road density withing a buffer. Therefore we are going to need to rearrange this data so that we have a row entry per buffer and a total amount of road within it. The issue is that GIS takes takes the amount of road and segments it. It also has different entries for each of the roads that may be within the buffer.
+
+Lets think about how I am actually going to do this
+
+What I need as an end result is two new columns, one that will represent the total length and one that represents each buffer.
+
+We need to consolidate
+
+a prerequisite to any grouping is conversions of some values into factors. There are multiple variables that all represent the same thing, the buffer ID. We just need to choose one to convert and use for our variable.
+
+I will choose to convert the variable cam_buffer into a factor variable
+
+```{r}
+roads$cam_buffer <- as.factor(roads$cam_buffer)
+```
+
+If we glimpse again we can see that it is now registered as a factor with 287 levels. Because we have a total of 516 buffers, this means that there is not necessarily a road within each buffer. This means that there will be gaps and N/As that we will have to mind when joining this dataframe(or the new one we create) to the landuse one.
+
+Lets create a new dataframe "buffers_roads"
+
+```{r}
+buffer_roads <- roads %>%
+     group_by(cam_buffer) %>%
+     summarise(
+          total_length = sum(Shape_Leng)
+     )
+```
+
+Lets take a quick look at this new dataframe
+
+```{r}
+view(buffer_roads)
+```
+
+looks good but I may have to figure out how to add a zero before the 1-9 numbers because it messes with the order.
+
+now we shall export the dataframe
+
+```{r}
+write.csv(buffer_roads, here("Data","Buffers_roads.csv"))
+```
+
+We now have a new csv file containing only this data. yay!
+
+## Water Bodies Data
+
+I may or may not use this data set. I am realizing taking a second look in ArcGISpro that some of the water bodies is not identifiable on it.
+
+it may just be better to just use the raster data.
+
+## Landuse Data
+
+Before moving onto altering the landuse data, let's clear our environment again
+
+```{r}
+rm(list = ls())
+```
+
+read in the data for the landuse classes
+
+```{r}
+landuse <- read.csv(here("Data","Buffer_landclass.csv"))
+```
+
+This dataframe did not export properly so I am going to have to re-export everything so that I can use it. But we are going to move ahead in writing code.
+
+the vegan stuff actually isn't going to work so we are outsourcing to the interweb
+
+try to use the t() function
+
+```{r}
+landuse_transpose <- t(landuse)
+```
+
+look at it
+
+```{r}
+view(landuse_transpose)
+
+```
+
+This is doing somewhat what I want it to do but now the first row is what the column headers should be.
+
+troubleshooting! using the janitor package
+
+open the package (after installing)
+
+```{r}
+library(janitor)
+```
+
+Lets try it now
+
+```{r}
+landuse_transpose_fix <- landuse_transpose %>% row_to_names(row_number = 1)
+```
+
+IT WORKED!!!!
+
+export the new file as a csv
+
+```{r}
+write.csv(landuse_transpose_fix, here("Data","Buffers_landuse.csv"))
+```
+
+## Other data
+
+I want to use canopy density and tree species things but idk
+
+## Sample camera data
+
+playing around with the sample data
+
+```{r}
+cams 
+```
+
+# Joining Dataframes
+
+clear environment
+
+```{r}
+rm(list = ls())
+```
+
+read in the dataframes we seek to join
+
+```{r}
+roads <- read.csv(here("Data","Buffers_roads.csv"))
+landuse <- read.csv(here("Data","Buffers_landuse.csv"))
+```
+
+there are different number of observations between the two. I think renaming columns in the GIS software is the way to go for this one.
+
+so I am at the line of what I can do until I get back to one of the computers with arcpro on it
+
+```{r}
+cams <- read.csv(here("Data", "AssignedSpecies_through_2023-06-13.csv"))
+```
