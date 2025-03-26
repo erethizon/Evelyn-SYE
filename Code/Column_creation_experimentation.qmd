@@ -344,7 +344,7 @@ buffer_roads <- buffers_roads %>%
 rm(percent_road)
 ```
 
-now to make percetn
+now to make percent colmn
 
 ```{r}
 percent_road <- buffer_roads$fraction_area_road * 100 
