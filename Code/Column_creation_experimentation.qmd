@@ -1,0 +1,356 @@
+---
+title: "Sums"
+format: html
+editor: visual
+---
+
+In this document, I seek to explore how to create new columns within my dataframe with a total sum of the variable across columns
+
+# Landuse data
+
+### Setting Up
+
+lets clear the environment and load the packages
+
+```{r}
+rm(list = ls())
+library(tidyverse)
+library("here")
+```
+
+suck in the data.
+
+```{r}
+landuse <- read.csv(here("Data","buffers_landuse.csv"))
+```
+
+### Creating a new dataframe with totals 
+
+First we are going to create a new dataframe with only the columns that we want to get the sums of. In this case it is columns 2-16.
+
+the recommendation is to make a list but i am going rouge
+
+```{r}
+landuse_w_totals <- landuse %>%
+  mutate(total_area = rowSums(across(where(is.numeric))))
+```
+
+lets take a look at what we've made
+
+```{r}
+glimpse(landuse_w_totals)
+```
+
+### Adding percent columns 
+
+now we see that there is a new column with the total area
+
+now we need to create 15 more columns each representing the percent of the area that they make up.
+
+create new list with the formula
+
+```{r}
+p_open_water <- landuse_w_totals$X11/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_totals %>%
+  mutate(percent_open_water = p_open_water)
+```
+
+Now delete the new Value I just created to keep the environment a bit less cluttered
+
+```{r}
+rm(p_open_water)
+```
+
+If I am deleting in the end can I just reuse that. im gonna do that now and fix it later if need be
+
+developed open space
+
+```{r}
+percent <- landuse_w_totals$X21/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_developed_open_space = percent) #note that instead of working within the landuse_w_total_, now we are working in landuse_w_percent
+```
+
+```{r}
+rm(percent)
+```
+
+#### Repeat for each landclass 
+
+developed low intensity
+
+```{r}
+percent <- landuse_w_totals$X22/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_developed_low_intensity = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+developed medium inensity
+
+```{r}
+percent <- landuse_w_totals$X23/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_developed_medium_intensity = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+developed high intensity
+
+```{r}
+percent <- landuse_w_totals$X23/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_developed_high_intensity = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+barren land
+
+```{r}
+percent <- landuse_w_totals$X31/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_barren_land = percent) 
+```
+
+deciduous forest
+
+```{r}
+rm(percent)
+```
+
+```{r}
+percent <- landuse_w_totals$X41/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_deciduous_forest = percent) 
+```
+
+Evergreen forest
+
+```{r}
+rm(percent)
+```
+
+```{r}
+percent <- landuse_w_totals$X42/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_evergreen_forest = percent) 
+```
+
+Mixed forest
+
+```{r}
+rm(percent)
+```
+
+```{r}
+percent <- landuse_w_totals$X43/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_mixed_forest = percent) 
+```
+
+Shrub/Scrub
+
+```{r}
+rm(percent)
+```
+
+```{r}
+percent <- landuse_w_totals$X52/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_shrub_scrub = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+Grassland herbaceous
+
+```{r}
+percent <- landuse_w_totals$X71/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_grassland_herbaceous = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+\`Pasture hay
+
+```{r}
+percent <- landuse_w_totals$X81/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_pasture_hay = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+Cultivated crops
+
+```{r}
+percent <- landuse_w_totals$X82/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_cultivated_crops = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+Woody wetlands
+
+```{r}
+percent <- landuse_w_totals$X90/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_woody_wetlands = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+Emergent herbaceous wetlands
+
+```{r}
+percent <- landuse_w_totals$X95/landuse_w_totals$total_area
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_emergent_herbaceous_wetlands = percent) 
+```
+
+```{r}
+rm(percent)
+```
+
+### Additional Columns 
+
+We would also like to know how much is forest and how much is developed and forest. to do this we need to add up the respective columns.
+
+#### Developed lands 
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>% 
+  mutate(percent_developed = sum(c(19:22)))
+```
+
+#### Forests 
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(percent_forest = sum(c(24:26)))
+```
+
+Just realized that its just fractions - idk how to make it percent and do the multiplication
+
+I tried: percent \<- ((landuse_w_totals$X95/landuse_w_totals$total_area)x100)
+
+# Road data 
+
+lets pull in the road data
+
+```{r}
+roads <- read.csv(here("Data","camera_buffer_roads.csv"))
+```
+
+link the buffer and the total area
+
+seperate file documenting the buffer type, radius, and area also read in
+
+```{r}
+buffers <- read.csv(here("Data","Buffer_areas.csv"))
+```
+
+merge the two dataframes? \
+change the name of the colums so they are the same. lets do this within the roads
+
+```{r}
+colnames(roads)[c(4)] <- "radius"
+```
+
+merge them now
+
+```{r}
+buffers_roads <- merge(roads,buffers)
+```
+
+now we can make a new column with the fraction of the total area
+
+```{r}
+fraction_road <- buffers_roads$Shape_Leng/buffers_roads$area_sq_m
+```
+
+```{r}
+buffer_roads <- buffers_roads %>%
+  mutate(fraction_area_road = percent_road)
+```
+
+```{r}
+rm(percent_road)
+```
+
+now to make percetn
+
+```{r}
+percent_road <- buffer_roads$fraction_area_road * 100 
+```
+
+```{r}
+buffer_roads <- buffers_roads %>%
+  mutate(percent_area_road = percent_road)
+```
