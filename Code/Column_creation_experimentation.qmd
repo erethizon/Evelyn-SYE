@@ -8,7 +8,7 @@ In this document, I seek to explore how to create new columns within my datafram
 
 # Landuse data
 
-### Setting Up
+## Setting up
 
 lets clear the environment and load the packages
 
@@ -24,7 +24,27 @@ suck in the data.
 landuse <- read.csv(here("Data","buffers_landuse.csv"))
 ```
 
-### Creating a new dataframe with totals 
+take a look at the data
+
+```{r}
+glimpse(landuse)
+```
+
+### Pre-emtively altering column names
+
+Note the column names. the buffer name column is named x and the landuse classes all have Xs in front of them
+
+lets start by renaming the buffer column
+
+colnames(dataframe)\[column in question\] \<- "new_name"
+
+```{r}
+colnames(landuse)[1] <- "_Buffer" #I put a "_" as the first character because the formula I am using to get rid of the X from the other columns deletes the first character. which i need to do later once ive combined the column names way later 
+```
+
+## Creating new columns
+
+### Creating a new dataframe with totals
 
 First we are going to create a new dataframe with only the columns that we want to get the sums of. In this case it is columns 2-16.
 
@@ -41,7 +61,7 @@ lets take a look at what we've made
 glimpse(landuse_w_totals)
 ```
 
-### Adding percent columns 
+### Adding percent columns
 
 now we see that there is a new column with the total area
 
@@ -81,7 +101,7 @@ landuse_w_percents <- landuse_w_percents %>%
 rm(percent)
 ```
 
-#### Repeat for each landclass 
+#### Repeat for each landclass
 
 developed low intensity
 
@@ -278,29 +298,41 @@ landuse_w_percents <- landuse_w_percents %>%
 rm(percent)
 ```
 
-### Additional Columns 
+we can actually just condense
+
+### Additional Columns
 
 We would also like to know how much is forest and how much is developed and forest. to do this we need to add up the respective columns.
 
-#### Developed lands 
+#### Developed lands
 
 ```{r}
 landuse_w_percents <- landuse_w_percents %>% 
-  mutate(percent_developed = sum(c(19:22)))
+  mutate(total_developed = X21 + X22 + X23 + X24)
 ```
-
-#### Forests 
 
 ```{r}
 landuse_w_percents <- landuse_w_percents %>%
-  mutate(percent_forest = sum(c(24:26)))
+  mutate(percent_developed = (total_developed/total_area)*100)
+```
+
+#### Forests
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>%
+  mutate(total_forest = X41 + X42 + X43)
+```
+
+```{r}
+landuse_w_percents <- landuse_w_percents %>% 
+  mutate(percent_forest=(total_forest/total_area)*100)
 ```
 
 Just realized that its just fractions - idk how to make it percent and do the multiplication
 
 I tried: percent \<- ((landuse_w_totals$X95/landuse_w_totals$total_area)x100)
 
-# Road data 
+# Road data
 
 lets pull in the road data
 
@@ -316,7 +348,7 @@ seperate file documenting the buffer type, radius, and area also read in
 buffers <- read.csv(here("Data","Buffer_areas.csv"))
 ```
 
-merge the two dataframes? \
+merge the two dataframes?\
 change the name of the colums so they are the same. lets do this within the roads
 
 ```{r}
@@ -329,6 +361,13 @@ merge them now
 buffers_roads <- merge(roads,buffers)
 ```
 
+lets get rid of the two other frames now that we have merged them
+
+```{r}
+rm(roads)
+rm(buffers)
+```
+
 now we can make a new column with the fraction of the total area
 
 ```{r}
@@ -336,21 +375,49 @@ fraction_road <- buffers_roads$Shape_Leng/buffers_roads$area_sq_m
 ```
 
 ```{r}
-buffer_roads <- buffers_roads %>%
-  mutate(fraction_area_road = percent_road)
+buffers_roads <- buffers_roads %>%
+  mutate(fraction_area_road = fraction_road)
 ```
 
 ```{r}
-rm(percent_road)
+rm(fraction_road)
 ```
 
-now to make percent colmn
-
-```{r}
-percent_road <- buffer_roads$fraction_area_road * 100 
-```
+now to make percent column
 
 ```{r}
-buffer_roads <- buffers_roads %>%
-  mutate(percent_area_road = percent_road)
+buffers_roads <- buffers_roads %>%
+  mutate(percent_area_road = fraction_area_road * 100)
 ```
+
+This theoretically is what I want but it will have to be rotated merged and shifted
+
+# experimenting
+
+in the end we want our data formatted a certian way. we want each row to be a camera, not a buffer
+
+```{r}
+df <- slice(landuse_w_percents, 34)
+```
+
+```{r}
+df <- setNames(df, paste(names(df), "pepe_max", sep = "_"))
+```
+
+```{r}
+df2 <- slice(landuse_w_percents,33)
+```
+
+```{r}
+df2 <- setNames(df2, paste(names(df), "pepe_min"))
+```
+
+```{r}
+combinded <- merge(df2,df)
+```
+
+It worked. Would need to do this 6 times for each camera and then repeat that process 86 times. I would like to try and learn to write a loop to do this
+
+for furture use in removing X
+
+library(stringr) names(df1)=str_sub(names(df1),2)

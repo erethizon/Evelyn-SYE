@@ -20,6 +20,7 @@ library(tidyverse) #bunch of packages combined to be one
 library(here) #assists in importing data sets 
 library(vegan) #allows one to reshape dataframes
 library(ggplot2) #for plotting data 
+library(stringr) #for changing strings 
 ```
 
 # Data Clean-up
@@ -96,13 +97,47 @@ Before moving onto altering the landuse data, let's clear our environment again
 rm(list = ls())
 ```
 
-read in the data for the landuse classes
+### reading in and merging datasets
+
+because GIS wouldnt export all 516 values in the table at once, I divided the exports into three csv files, one for fishers, one for female porcupines, and one for male porcupines. here I will merge them all together.
+
+Read in the three datasets
 
 ```{r}
-landuse <- read.csv(here("Data","Buffer_landclass.csv"))
+fishers <- read.csv(here("Data","PEPE_landuse.csv"))
+porcupines_f <- read.csv(here("Data","ERDO_F_landuse.csv"))
+porcupines_m <- read.csv(here("Data","ERDO_M_landuse.csv"))
 ```
 
-This dataframe did not export properly so I am going to have to re-export everything so that I can use it. But we are going to move ahead in writing code.
+merging needs a common column. lets make a list of 15 and add it as a new column for each dataset. then we can merge them all. it will be deleted afterwards 
+now merge the three together and rename the file "landuse"
+
+create the object
+```{r}
+number <- seq(1:15)
+```
+
+now add it to each of the dataframes using the mutate function 
+```{r}
+fishers <- fishers %>%
+  mutate(fishers, number=number)
+porcupines_f <- porcupines_f %>%
+  mutate(porcupines_f, number=number)
+porcupines_m <- porcupines_m %>%
+  mutate(porcupines_m, number=number)
+```
+
+Now merge the three together
+```{r}
+landuse <- merge(fishers,porcupines_f)%>%
+  merge(porcupines_m) #the piping allows for the merging three dataframes 
+```
+
+lets remove the "number column" before we start flipping 
+```{r}
+landuse$number <- NULL
+```
+
 
 the vegan stuff actually isn't going to work so we are outsourcing to the interweb
 
@@ -135,12 +170,16 @@ Lets try it now
 landuse_transpose_fix <- landuse_transpose %>% row_to_names(row_number = 1)
 ```
 
+something I would also like to do now is
+
 IT WORKED!!!!
+
+
 
 export the new file as a csv
 
 ```{r}
-write.csv(landuse_transpose_fix, here("Data","Buffers_landuse.csv"))
+write.csv(landuse_transpose_fix, here("Data","Buffers_landuse_full.csv"))
 ```
 
 ## Other data
