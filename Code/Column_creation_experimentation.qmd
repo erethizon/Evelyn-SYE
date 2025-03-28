@@ -6,7 +6,7 @@ editor: visual
 
 In this document, I seek to explore how to create new columns within my dataframe with a total sum of the variable across columns
 
-# Landuse data
+# Land use data
 
 ## Setting up
 
