@@ -216,3 +216,6 @@ so I am at the line of what I can do until I get back to one of the computers wi
 ```{r}
 cams <- read.csv(here("Data", "AssignedSpecies_through_2023-06-13.csv"))
 ```
+
+
+hi 
