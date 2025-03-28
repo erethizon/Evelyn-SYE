@@ -1,0 +1,25 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+## Calculating pi*r*-squared
+
+Say you have a column, called radius
+
+```{r}
+radius <- c(3.25, 0.98, 5.23)
+```
+
+Those represent the radius (or as in your data, distance from center of homerange to edge)
+
+To calculate area, need a = pi \* r-squared
+
+do the math
+
+```{r}
+area <- (radius*radius)*pi
+area
+
+```
