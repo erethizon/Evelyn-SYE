@@ -16,6 +16,7 @@ lets clear the environment and load the packages
 rm(list = ls())
 library(tidyverse)
 library("here")
+library(janitor)
 ```
 
 suck in the data.
