@@ -21,7 +21,7 @@ library("here")
 suck in the data.
 
 ```{r}
-landuse <- read.csv(here("Data","buffers_landuse.csv"))
+landuse <- read.csv(here("Data","Buffers_landuse_full.csv"))
 ```
 
 take a look at the data
@@ -89,7 +89,7 @@ If I am deleting in the end can I just reuse that. im gonna do that now and fix 
 developed open space
 
 ```{r}
-percent <- landuse_w_totals$X21/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X21/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -106,7 +106,7 @@ rm(percent)
 developed low intensity
 
 ```{r}
-percent <- landuse_w_totals$X22/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X22/landuse_w_totals$total_area) *100
 ```
 
 ```{r}
@@ -121,7 +121,7 @@ rm(percent)
 developed medium inensity
 
 ```{r}
-percent <- landuse_w_totals$X23/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X23/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -136,7 +136,7 @@ rm(percent)
 developed high intensity
 
 ```{r}
-percent <- landuse_w_totals$X23/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X23/landuse_w_totals$total_area) *100
 ```
 
 ```{r}
@@ -151,7 +151,7 @@ rm(percent)
 barren land
 
 ```{r}
-percent <- landuse_w_totals$X31/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X31/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -166,7 +166,7 @@ rm(percent)
 ```
 
 ```{r}
-percent <- landuse_w_totals$X41/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X41/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -181,7 +181,7 @@ rm(percent)
 ```
 
 ```{r}
-percent <- landuse_w_totals$X42/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X42/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -196,7 +196,7 @@ rm(percent)
 ```
 
 ```{r}
-percent <- landuse_w_totals$X43/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X43/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -211,7 +211,7 @@ rm(percent)
 ```
 
 ```{r}
-percent <- landuse_w_totals$X52/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X52/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -226,7 +226,7 @@ rm(percent)
 Grassland herbaceous
 
 ```{r}
-percent <- landuse_w_totals$X71/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X71/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -241,7 +241,7 @@ rm(percent)
 \`Pasture hay
 
 ```{r}
-percent <- landuse_w_totals$X81/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X81/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -256,7 +256,7 @@ rm(percent)
 Cultivated crops
 
 ```{r}
-percent <- landuse_w_totals$X82/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X82/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -271,7 +271,7 @@ rm(percent)
 Woody wetlands
 
 ```{r}
-percent <- landuse_w_totals$X90/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X90/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -286,7 +286,7 @@ rm(percent)
 Emergent herbaceous wetlands
 
 ```{r}
-percent <- landuse_w_totals$X95/landuse_w_totals$total_area
+percent <- (landuse_w_totals$X95/landuse_w_totals$total_area)*100
 ```
 
 ```{r}
@@ -394,7 +394,79 @@ This theoretically is what I want but it will have to be rotated merged and shif
 
 # experimenting
 
+I want the the names to match between so I will unify the names of the buffers
+
+bring in the codes
+
+```{r}
+codes<-read.csv(here("Data","Buffer_landuse_codes.csv"))
+```
+
+change the names of the coulms so they make more sense and match with the other frame
+
+colnames(dataframe)\[column in question\] \<- "new_name"
+
+```{r}
+colnames(codes)[1]<- "_Buffer"
+colnames(codes)[2] <- "Buffers"
+```
+
+Now we can merge the landuse and buffers together
+
+```{r}
+landuse_w_percents<- merge(codes,landuse_w_percents)
+```
+
+now we can delete "\_Buffers"
+
+```{r}
+landuse_w_percents$`_Buffer` <- NULL
+```
+
+lets export this for now for ease of use
+
+```{r}
+write.csv(landuse_w_percents, here("Data","Buffer_landuse_percents.csv"))
+```
+
+I am also going to change the names of the buffers in buffer_roads
+
+we will use the paste() function
+
+```{r}
+buffers_roads$ORIG_FID <- as.factor(buffers_roads$ORIG_FID)
+```
+
+```{r}
+buffers_roads$Buffers <- paste(buffers_roads$buffer,buffers_roads$ORIG_FID, sep = "_")
+```
+
+from this data we only really need the road density. so lets get a summary of the totals
+
+```{r}
+road_density_buffer <- buffers_roads %>%
+  group_by(Buffers) %>%
+  summarise(road_denisty=sum(percent_area_road))
+```
+
+```{r}
+write.csv(road_density_buffer, here("Data","Road_density.csv"))
+```
+
+maybe transpose as well
+
+```{r}
+transpose_road_densiry <- t(road_density_buffer)
+```
+
+```{r}
+transpose_road_densiry <- transpose_road_densiry %>%
+  row_to_names(row_number = 1)
+```
+
 in the end we want our data formatted a certian way. we want each row to be a camera, not a buffer
+
+doesnt work anymore cause changes
 
 ```{r}
 df <- slice(landuse_w_percents, 34)
