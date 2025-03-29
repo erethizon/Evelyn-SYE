@@ -33,7 +33,8 @@ cameras$choice <- as.factor(cameras$choice)
 
 plot out the species with a histogram
 
-![](images/clipboard-335741901.png)
+![](images/clipboard-335741901.png)  
+### I think it is good to leave out these .png files unless you add the images folder to your project and keep all the images inside of the project for the reproducible research method.
 
 ![](images/clipboard-335741901.png)
 
