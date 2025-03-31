@@ -16,7 +16,7 @@ lets clear the environment and load the packages
 rm(list = ls())
 library(tidyverse)
 library("here")
-library(janitor)
+library(janitor) #please specify what it does
 ```
 
 suck in the data.
@@ -26,6 +26,8 @@ landuse <- read.csv(here("Data","Buffers_landuse_full.csv"))
 ```
 
 take a look at the data
+
+**I am uncomfortable that the units for all of the area columns are not "baked in" to the column names and that the column names don't make intuitive sense. Please see my feedback in `Data_preparation.qmd`** and go through and fix the the code there since this file depends on files you made there.
 
 ```{r}
 glimpse(landuse)
@@ -43,6 +45,8 @@ colnames(dataframe)\[column in question\] \<- "new_name"
 colnames(landuse)[1] <- "_Buffer" #I put a "_" as the first character because the formula I am using to get rid of the X from the other columns deletes the first character. which i need to do later once ive combined the column names way later 
 ```
 
+**you can skip this hassle almost entirely if you make sure to add coherent, systematic column names when you are creating these objects. See my comments in `Data_preparation.qmd`**
+
 ## Creating new columns
 
 ### Creating a new dataframe with totals
@@ -53,7 +57,13 @@ the recommendation is to make a list but i am going rouge
 
 ```{r}
 landuse_w_totals <- landuse %>%
-  mutate(total_area = rowSums(across(where(is.numeric))))
+  mutate(total_area = rowSums(across(where(is.numeric))))  #this is nice code!
+```
+
+**what if you did above code but just to landuse so that you don't keep adding more and more dataframes to your project? Just add the new column to landuse. Like this:**
+
+```{r}
+landuse <- landuse %>% mutate(total_area = rowSums(across(where(is.numeric)))) 
 ```
 
 lets take a look at what we've made
@@ -78,6 +88,16 @@ p_open_water <- landuse_w_totals$X11/landuse_w_totals$total_area
 landuse_w_percents <- landuse_w_totals %>%
   mutate(percent_open_water = p_open_water)
 ```
+
+**Can you think of a way to combine the last two code chunks so that you don't have to crreate the p_open_water object as an "extra"? What about this:**
+
+```{r}
+landuse <- landuse %>% mutate(
+  p_open_water = X11/total_area
+)
+```
+
+**Notice that with my code, we still just have one object, landuse, to which we are adding.**
 
 Now delete the new Value I just created to keep the environment a bit less cluttered
 
@@ -299,6 +319,8 @@ landuse_w_percents <- landuse_w_percents %>%
 rm(percent)
 ```
 
+**So this is all good, but see if you can follow my lead to just do it all in the landuse object to keep things clean.**
+
 we can actually just condense
 
 ### Additional Columns
@@ -347,6 +369,8 @@ seperate file documenting the buffer type, radius, and area also read in
 buffers <- read.csv(here("Data","Buffer_areas.csv"))
 ```
 
+**since i think you based the typical buffer sizes based on the literature, and since the literature (I think - correct me if I'm wrong) was reporting typical home ranges in hectares, I think you should convert stuff to hectares.**
+
 merge the two dataframes?\
 change the name of the colums so they are the same. lets do this within the roads
 
@@ -375,12 +399,21 @@ fraction_road <- buffers_roads$Shape_Leng/buffers_roads$area_sq_m
 
 ```{r}
 buffers_roads <- buffers_roads %>%
-  mutate(fraction_area_road = fraction_road)
+  mutate(fraction_area_road = fraction_road) #I think you should call this "road_density_m_per_sq_m" or something
 ```
 
 ```{r}
 rm(fraction_road)
 ```
+
+now to make percent column
+
+```{r}
+buffers_roads <- buffers_roads %>%
+  mutate(percent_area_road = fraction_area_road * 100)
+```
+
+**we don't think of road density in terms of a percentage. If the values are really tiny, then sometimes people scale it up (e.g. instead of m road per square meter, they might do m road per 100 square meters or similar... I think you should be using hectares and not square meters as your area unit anyway.**
 
 This theoretically is what I want but it will have to be rotated merged and shifted
 
@@ -418,7 +451,7 @@ landuse_w_percents$`_Buffer` <- NULL
 lets export this for now for ease of use
 
 ```{r}
-write.csv(landuse_w_percents, here("Data","Buffer_landuse_percents.csv"))
+write.csv(landuse_w_percents, here("Data","Buffer_landuse_percents.csv"), row.names = F) #use row.names = F to keep from getting weird X column
 ```
 
 I am also going to change the names of the buffers in buffer_roads
@@ -441,8 +474,10 @@ road_density_buffer <- buffers_roads %>%
   summarise(road_denisty=sum(percent_area_road))
 ```
 
+**you may wish to fix this code so that it isn't using the percent_area_road since that is not the units you want for road density**
+
 ```{r}
-write.csv(road_density_buffer, here("Data","Road_density.csv"))
+write.csv(road_density_buffer, here("Data","Road_density.csv"), row.names = F) #use row.names = F
 ```
 
 maybe transpose as well
@@ -468,6 +503,8 @@ df <- slice(landuse_w_percents, 34)
 df <- setNames(df, paste(names(df), "pepe_max", sep = "_"))
 ```
 
+**the problem with this method is that it is not reproducible. it is not clear from the code why/how you are slicing row 34, then 33, etc.**
+
 ```{r}
 df2 <- slice(landuse_w_percents,33)
 ```
@@ -486,9 +523,14 @@ It worked. Would need to do this 6 times for each camera and then repeat that pr
 
 ## Test
 
+
+library(stringr) names(df1)=str_sub(names(df1),2)
+
+**I think that I was pointing you in the wrong direction. What we need here now is a column that identifies the camera with which each row (buffer) is associated.**
+
 ```{r}
 
 my_col_names <- names(landuse_w_percents[2:35])
 test <- landuse_w_percents %>% 
   pivot_wider(names_from = Buffers, values_from =my_col_names )
-```
+``

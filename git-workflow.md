@@ -11,7 +11,8 @@ Syncing a forked repository:
 
 git pull upstream main --ff-only
 
-CHANGE BRANCHES!g
+CHANGE BRANCHES!
+
 
 git push origin main pushes changes to my version of the fork (origin)
 
