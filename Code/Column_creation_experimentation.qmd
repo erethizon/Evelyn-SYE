@@ -484,7 +484,7 @@ It worked. Would need to do this 6 times for each camera and then repeat that pr
 
 \*sapply and lapply (for possibly looping but better)
 
-## Test 
+## Test
 
 ```{r}
 
