@@ -351,13 +351,11 @@ landuse_w_percents <- landuse_w_percents %>%
   mutate(percent_forest=(total_forest/total_area)*100)
 ```
 
-Just realized that its just fractions - idk how to make it percent and do the multiplication
-
-I tried: percent \<- ((landuse_w_totals$X95/landuse_w_totals$total_area)x100)
-
 # Road data
 
 lets pull in the road data
+
+distsnce \* distance \* pi
 
 ```{r}
 roads <- read.csv(here("Data","camera_buffer_roads.csv"))
@@ -521,8 +519,18 @@ combinded <- merge(df2,df)
 
 It worked. Would need to do this 6 times for each camera and then repeat that process 86 times. I would like to try and learn to write a loop to do this
 
-for furture use in removing X
+\*sapply and lapply (for possibly looping but better)
+
+## Test 
+
 
 library(stringr) names(df1)=str_sub(names(df1),2)
 
 **I think that I was pointing you in the wrong direction. What we need here now is a column that identifies the camera with which each row (buffer) is associated.**
+
+```{r}
+
+my_col_names <- names(landuse_w_percents[2:35])
+test <- landuse_w_percents %>% 
+  pivot_wider(names_from = Buffers, values_from =my_col_names )
+``
