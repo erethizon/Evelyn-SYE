@@ -51,7 +51,7 @@ What I need as an end result is two new columns, one that will represent the tot
 
 We need to consolidate **consolidate what?**
 
-a prerequisite to any grouping is conversions of some values into factors. There are multiple variables that all represent the same thing, the buffer ID. We just need to choose one to convert and use for our variable.
+A prerequisite to any grouping is conversions of some values into factors. There are multiple variables that all represent the same thing, the buffer ID. We just need to choose one to convert and use for our variable.
 
 I will choose to convert the variable cam_buffer into a factor variable
 
@@ -117,9 +117,7 @@ porcupines_m <- read.csv(here("Data","ERDO_M_landuse.csv"))
 
 merging needs a common column. lets make a list of 15 and add it as a new column for each dataset. then we can merge them all. it will be deleted afterwards now merge the three together and rename the file "landuse"
 
-
-**These steps are not necessary because you have a column called VALUE that already appears in each of the datasets. Try doing the merge just based on VALUE so you can clean up your code to only include necessary steps**
-create the object
+**These steps are not necessary because you have a column called VALUE that already appears in each of the datasets. Try doing the merge just based on VALUE so you can clean up your code to only include necessary steps** create the object
 
 ```{r}
 number <- seq(1:15)
@@ -180,7 +178,7 @@ Lets try it now
 landuse_transpose_fix <- landuse_transpose %>% row_to_names(row_number = 1)
 ```
 
-something I would also like to do now is **Yes? Is what? Let's get the code cleaned up to get rid of statements like this that aren't doing much.  Also, now that it worked, get rid of the code that didn't give you what you want so that in future, you don't have to run code that doesn't get you what you want.**
+something I would also like to do now is **Yes? Is what? Let's get the code cleaned up to get rid of statements like this that aren't doing much. Also, now that it worked, get rid of the code that didn't give you what you want so that in future, you don't have to run code that doesn't get you what you want.**
 
 IT WORKED!!!!
 
@@ -199,10 +197,6 @@ I want to use canopy density and tree species things but idk
 ## Sample camera data
 
 playing around with the sample data
-
-```{r}
-cams 
-```
 
 # Joining Dataframes
 
