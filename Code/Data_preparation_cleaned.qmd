@@ -64,11 +64,11 @@ If we glimpse again we can see that it is now registered as a factor with 287 le
 Lets create a new dataframe "buffers_roads"
 
 ```{r}
-buffer_roads <- roads %>%
-     group_by(cam_buffer) %>%
+roads <- roads %>% 
+     group_by(cam_buffer) %>% mutate(
      summarise(
           total_length = sum(road_length_m)
-     )
+     ))
 ```
 
 our variable titled "distance" is actually just the radius (km) of the buffer. lets change the name of the variable to represent that
@@ -77,7 +77,7 @@ our variable titled "distance" is actually just the radius (km) of the buffer. l
 colnames(roads)[c(4)] <- "radius"
 ```
 
-Now lets create a new column for the total area of the buffer to compare the total amount of road by
+Now lets create a new column for the total area of the buffer to compare the total amount of road divided by area per buffer
 
 ```{r}
 roads <- roads %>% mutate(
@@ -92,6 +92,8 @@ roads <- roads %>% mutate(
   road_density = road_length_m/buffer_area_km2
 )
 ```
+
+I still only want the total
 
 Lets take a quick look at this new dataframe
 
@@ -137,6 +139,8 @@ porcupines_m <- read.csv(here("Data","ERDO_M_landuse.csv"))
 
 **I'm very uncomfortable with how all of the rows and columns are named here without any explaination in the qmd file. I'd also like to see you add a column that has the land use category change the column names to correspond to the actual things that the columns represent. Because you have a lot of different files that will all end up needing to get joined/merged etc, I think it would be great if, in your work flow, each time you pull in a new data set you run some code that systematizes the column names and that, when appropriate, includes a joining column such as bufferID or camera_sd id**
 
+This has now been done- but its saved on the pc so im gonna mess with it afterwards
+
 ## FIX THIS!!!
 
 Now merge the three together
@@ -162,8 +166,6 @@ Use the Janitor package to convert the first row to the column headers
 landuse_transpose_fix <- landuse_transpose %>% row_to_names(row_number = 1)
 ```
 
-before you export as a csv, change the column names away from land use codes to land use categories to make the csv more self-explanatory and think about adding a column for camera and or buffer id. You can use names for the first and mutate for the second
-
 Change the values of the land use classes from number codes to descriptors
 
 ```{r}
@@ -186,7 +188,7 @@ colnames(landuse_transpose_fix)[15] <- "emergent_herbaceous_wetlands"
 ```
 
 ```{r}
-write.csv(landuse_transpose_fix, here("Data","Buffers_landuse_full.csv"), row.names = F) # add row.names = F when you write csv files to prevent the strange "X" in column names and to prevent addition of extra columns when you read in the data
+write.csv(landuse_transpose_fix, here("Data","Buffers_landuse_full.csv")) 
 ```
 
 ## creating columns for totals and percents
@@ -265,4 +267,86 @@ landuse <- landuse %>% mutate(
 )
 ```
 
-# Reformatting into a useable matrix
+# Reformatting into a useable dataframe for the modeling
+
+Right now, our dataframe entries are the buffer, but we want it to be the camera instead and the landuse category to merge with the buffer name.
+
+**I am going to experiment.**
+
+What i need to do is for each column of a camera, add the buffer to the landuse class so that there are 211 columns, the initial ID and then 6 sets of the 35 landuse data for each buffer type. I just have no clue where to even begin approaching doing that. After every 86 rows, the data needs to the data needs to be reformatted to become a new set of rows.
+
+dataframe would go from 516 observations of 36 variables to 86 observations of 211 variables.
+
+What if, I divided up the dataframe into 3 via slicing, changed the names and then merged them back together. until i can re-export the gis that has the camera numbers. I am going to do a little makeshift solution of adding a new column 1-86 for each of them.
+
+lets try this.
+
+slice the landuse dataframe to get 6 new dataframes each representing a new buffer
+
+```{r}
+fisher_max <- slice(landuse, 1:86) 
+fisher_min <- slice(landuse, 87:172)
+porcupine_F_max <- slice(landuse, 173:258)
+porcupine_F_min <- slice(landuse, 259:344)
+porcupine_M_max <- slice(landuse, 345:430)
+porcupine_M_min <- slice(landuse, 431:516)
+```
+
+lets also delete the first column for all of these. this is because our buffer names will now be incorporated into the column names. we will set the x column to null
+
+```{r}
+fisher_max$X <- NULL
+fisher_min$X <- NULL
+porcupine_F_max$X <- NULL
+porcupine_F_min$X <- NULL
+porcupine_M_max$X <- NULL
+porcupine_M_min$X <- NULL
+```
+
+Now to change the names of the columns to integrate the buffer. this is something I am googling first
+
+```{r}
+fisher_max <- fisher_max %>%
+      rename_with(~str_c("PEPE_max_", .), everything()) # within the fisher_max dataframe lets rename all of the column with the string of characters "PEPE_max" sperated by,""
+```
+
+worked. Lets do it for the rest
+
+```{r}
+fisher_min <- fisher_min %>%
+      rename_with(~str_c("PEPE_min_", .), everything())
+porcupine_F_max <- porcupine_F_max %>%
+      rename_with(~str_c("ERDO_F_max_", .), everything())
+porcupine_F_min <- porcupine_F_min %>%
+      rename_with(~str_c("ERDO_F_min_", .), everything())
+porcupine_M_max <- porcupine_M_max %>%
+      rename_with(~str_c("ERDO_M_max_", .), everything())
+porcupine_M_min <- porcupine_M_min %>%
+      rename_with(~str_c("ERDO_M_min_", .), everything())
+```
+
+Now we can merge all of the dataframes together! yay!
+
+ran into an error. have to add the camera variable after changing all of the column names
+
+now lets create a new row for each of them that just lists the number 1-86
+
+use dyplr verb mutate to create a new column
+
+```{r}
+fisher_max <- fisher_max %>% mutate(camera = 1:n())
+fisher_min <- fisher_min %>% mutate(camera = 1:n())
+porcupine_F_max <- porcupine_F_max %>% mutate(camera = 1:n())
+porcupine_F_min <- porcupine_F_min %>% mutate(camera = 1:n())
+porcupine_M_max <- porcupine_M_max %>% mutate(camera = 1:n())
+porcupine_M_min <- porcupine_M_min %>% mutate(camera = 1:n())
+```
+
+```{r}
+landuse_by_camera <- merge(fisher_max, fisher_min) %>%
+  merge(porcupine_F_max)%>%
+  merge(porcupine_F_min)%>%
+  merge(porcupine_M_max)%>%
+  merge(porcupine_M_min)
+  
+```
