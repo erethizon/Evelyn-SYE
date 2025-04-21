@@ -65,7 +65,7 @@ Lets create a new dataframe "buffers_roads"
 
 ```{r}
 buffer_roads <- roads %>%
-     group_by(cam_buffer) %>%
+     group_by(ORIG_FID) %>%
      summarise(
           total_length = sum(Shape_Leng)
      )
