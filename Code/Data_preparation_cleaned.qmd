@@ -51,7 +51,7 @@ Now to reshape our data and find the total amount of road per buffer
 
 ### Calculating total amount of road per buffer
 
-A prerequisite to any grouping is conversions of some values into factors. There are multiple variables that all represent the same thing, the buffer ID. We just need to choose one to convert and use for our variable.
+A prerequisite to any grouping is conversions of some values into factors. There are multiple variables that all represent the same thing, the buffer ID, in this dataframe. We just need to choose one to convert and use for our variable.
 
 I will choose to convert the variable cam_buffer into a factor variable
 
@@ -71,7 +71,13 @@ roads <- roads %>%
      ))
 ```
 
-our variable titled "distance" is actually just the radius (km) of the buffer. lets change the name of the variable to represent that
+try and sync up some things
+
+```{r}
+buffers <- read.csv(here("Data","Camera_buffers.csv"))
+```
+
+Our variable titled "distance" is actually just the radius (km) of the buffer. lets change the name of the variable to represent that
 
 ```{r}
 colnames(roads)[c(4)] <- "radius"
@@ -342,6 +348,7 @@ porcupine_M_max <- porcupine_M_max %>% mutate(camera = 1:n())
 porcupine_M_min <- porcupine_M_min %>% mutate(camera = 1:n())
 ```
 
+
 ```{r}
 landuse_by_camera <- merge(fisher_max, fisher_min) %>%
   merge(porcupine_F_max)%>%
@@ -349,4 +356,30 @@ landuse_by_camera <- merge(fisher_max, fisher_min) %>%
   merge(porcupine_M_max)%>%
   merge(porcupine_M_min)
   
+Add metadata
+=======
+
+read in the data that has the camera IDs
+
+```{r}
+Camera_IDs <- read.csv(here("Data","Camera_IDs.csv"))
 ```
+
+to join these ID with the rest of the data we need to make sure the name of columns have to be the same
+
+```{r}
+colnames(Camera_IDs)[1] <- "camera"
+```
+
+now merge the two dataframes together
+
+```{r}
+landuse_by_camera <- merge(Camera_IDs, landuse_by_camera)
+```
+
+see what the camera trap catching data looks like
+
+```{r}
+cams <- read.csv(here("Data","AssignedSpecies_through_2023-06-13.csv"))
+```
+

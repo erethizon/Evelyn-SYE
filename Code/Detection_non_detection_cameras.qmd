@@ -1,0 +1,7 @@
+---
+title: "Detection_non_detection_cameras"
+format: html
+editor: visual
+---
+
+In this document, I am going to attempt converting the camera trap data detections
