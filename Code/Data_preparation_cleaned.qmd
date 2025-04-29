@@ -64,11 +64,11 @@ If we glimpse again we can see that it is now registered as a factor with 287 le
 Lets create a new dataframe "buffers_roads"
 
 ```{r}
-buffer_roads <- roads %>%
-     group_by(cam_buffer) %>%
+roads <- roads %>% 
+     group_by(cam_buffer) %>% mutate(
      summarise(
           total_length = sum(road_length_m)
-     )
+     ))
 ```
 
 try and sync up some things
@@ -348,7 +348,6 @@ porcupine_M_max <- porcupine_M_max %>% mutate(camera = 1:n())
 porcupine_M_min <- porcupine_M_min %>% mutate(camera = 1:n())
 ```
 
-merge the dataframes together
 
 ```{r}
 landuse_by_camera <- merge(fisher_max, fisher_min) %>%
@@ -357,7 +356,8 @@ landuse_by_camera <- merge(fisher_max, fisher_min) %>%
   merge(porcupine_M_max)%>%
   merge(porcupine_M_min)
   
-```
+Add metadata
+=======
 
 read in the data that has the camera IDs
 
@@ -382,3 +382,4 @@ see what the camera trap catching data looks like
 ```{r}
 cams <- read.csv(here("Data","AssignedSpecies_through_2023-06-13.csv"))
 ```
+
