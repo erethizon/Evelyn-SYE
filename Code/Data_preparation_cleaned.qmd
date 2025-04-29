@@ -156,6 +156,8 @@ landuse <- merge(fishers,porcupines_f)%>%
   merge(porcupines_m) #the piping allows for the merging three dataframes 
 ```
 
+SKIP to here now
+
 Now time to flip the data into the way we want it to be
 
 try to use the t() function

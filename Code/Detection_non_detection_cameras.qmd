@@ -4,4 +4,35 @@ format: html
 editor: visual
 ---
 
-In this document, I am going to attempt converting the camera trap data detections
+In this document, I am going to attempt converting the camera trap data detection to a usable matrix for occupancy modeling
+
+clear environment and open relevant packages
+
+```{r}
+rm(list=ls())
+library(tidyverse)
+library("here")
+```
+
+read in the data
+
+```{r}
+cams <- read.csv(here("Data","new-data","Pre_2020_cam_data.csv"))
+```
+
+lets take a glimpse at the data
+
+```{r}
+glimpse(cams)
+```
+
+Change the species (choice) to a factor variable. then look to see how many unique species there are
+
+```{r}
+cams$choice <- as.factor(cams$choice)
+unique(cams$choice)
+```
+
+yay! there are both fishers and porcupines present. now lets get onto organizing the data.
+
+I will be taking a lot of information
