@@ -17,7 +17,7 @@ library("here")
 read in the data
 
 ```{r}
-cams <- read.csv(here("Data","new-data","Pre_2020_cam_data.csv"))
+cams <- read.csv(here("Data","Pre_2020_cam_data.csv"))
 ```
 
 lets take a glimpse at the data

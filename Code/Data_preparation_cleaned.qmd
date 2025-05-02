@@ -23,12 +23,14 @@ library(janitor) #helps with reformating data
 
 # Data Clean-up
 
+# DEPLOYMENT \# DIDN'T EXPORT
+
 ## Road Data
 
 Import the data and give it a name
 
 ```{r}
-roads <- read.csv(here("Data","Camera_buffer_roads.csv"))
+roads <- read.csv(here("Data","correct_cam_road_sum.csv"))
 ```
 
 preview the data
@@ -44,7 +46,7 @@ What we intend to use this data for is to determine the road density withing eac
 before we move on to getting these totals, lets rename the Shape_Leng column so that it makes more sense for our data.
 
 ```{r}
-colnames(roads)[11] <- "road_length_m"
+colnames(roads)[4] <- "road_length_m"
 ```
 
 Now to reshape our data and find the total amount of road per buffer
@@ -61,23 +63,7 @@ roads$cam_buffer <- as.factor(roads$cam_buffer)
 
 If we glimpse again we can see that it is now registered as a factor with 287 levels. Because we have a total of 516 buffers, this means that there is not necessarily a road within each buffer. This means that there will be gaps and N/As that we will have to mind when joining this dataframe(or the new one we create) to the landuse one.
 
-Lets create a new dataframe "buffers_roads"
-
-```{r}
-buffer_roads <- roads %>%
-     group_by(cam_buffer) %>%
-     summarise(
-          total_length = sum(road_length_m)
-     )
-```
-
-try and sync up some things
-
-```{r}
-buffers <- read.csv(here("Data","Camera_buffers.csv"))
-```
-
-Our variable titled "distance" is actually just the radius (km) of the buffer. lets change the name of the variable to represent that
+## Need to re-export the data with the "distance variable attached and figure out what happened with the deployment number not loading.
 
 ```{r}
 colnames(roads)[c(4)] <- "radius"
@@ -143,9 +129,11 @@ porcupines_f <- read.csv(here("Data","ERDO_F_landuse.csv"))
 porcupines_m <- read.csv(here("Data","ERDO_M_landuse.csv"))
 ```
 
-**I'm very uncomfortable with how all of the rows and columns are named here without any explaination in the qmd file. I'd also like to see you add a column that has the land use category change the column names to correspond to the actual things that the columns represent. Because you have a lot of different files that will all end up needing to get joined/merged etc, I think it would be great if, in your work flow, each time you pull in a new data set you run some code that systematizes the column names and that, when appropriate, includes a joining column such as bufferID or camera_sd id**
-
 This has now been done- but its saved on the pc so im gonna mess with it afterwards
+
+```{r}
+landuse <- read.csv(here("Data","landuse_fix.csv"))
+```
 
 ## FIX THIS!!!
 
@@ -157,6 +145,12 @@ landuse <- merge(fishers,porcupines_f)%>%
 ```
 
 SKIP to here now
+
+## New Dataframe from GIS
+
+```{r}
+landuse <- read.csv(here("Data","landuse_fix.cs"))
+```
 
 Now time to flip the data into the way we want it to be
 
@@ -292,12 +286,12 @@ lets try this.
 slice the landuse dataframe to get 6 new dataframes each representing a new buffer
 
 ```{r}
-fisher_max <- slice(landuse, 1:86) 
-fisher_min <- slice(landuse, 87:172)
-porcupine_F_max <- slice(landuse, 173:258)
-porcupine_F_min <- slice(landuse, 259:344)
-porcupine_M_max <- slice(landuse, 345:430)
-porcupine_M_min <- slice(landuse, 431:516)
+fisher_max <- slice(landuse, 1:344) 
+fisher_min <- slice(landuse, 345:688)
+porcupine_F_max <- slice(landuse, 689:1032)
+porcupine_F_min <- slice(landuse, 1033:1376)
+porcupine_M_max <- slice(landuse, 1377:1720)
+porcupine_M_min <- slice(landuse, 1721:2064)
 ```
 
 lets also delete the first column for all of these. this is because our buffer names will now be incorporated into the column names. we will set the x column to null
@@ -380,7 +374,3 @@ landuse_by_camera <- merge(Camera_IDs, landuse_by_camera)
 ```
 
 see what the camera trap catching data looks like
-
-```{r}
-cams <- read.csv(here("Data","AssignedSpecies_through_2023-06-13.csv"))
-```

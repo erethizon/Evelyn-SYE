@@ -1,4 +1,3 @@
-# Creating changes to the functions so that they work with our dataset 
 # Several functions require the code developed by Jorge Ahumada which is appended below. 
 # Daniel Spitale, Nov 2014.
 # update Jan 2015: changed "Sampling.Period" with "Sampling.Event" in the variable names
@@ -6,7 +5,6 @@
 # update Dec 2015: PNAB
 
 # the function joins in a single command three functions which adjust the data
-# may need to use these - idk tho
 fix.dta <- function(dtaframe) {
     datafix <- f.fix.data(dtaframe)
     datacorrect <- f.correct.DF(datafix)
@@ -19,10 +17,10 @@ event.sp <- function(dtaframe, year, thresh) {
     # thresh= minutes
     require(reshape)
     hr <- f.separate.events(dtaframe, thresh)
-    sel <- subset(hr, select = c(event, Cam.SD, date, choice, grp))
+    sel <- subset(hr, select = c(Sampling.Event, Sampling.Unit.Name, Photo.Date, bin, grp))
     del <- unique(sel)
     dta <- rename(del, c(bin = "value"))
-    yrsel <- dta[dta$event == year, ]
+    yrsel <- dta[dta$Sampling.Event == year, ]
     events <- cast(yrsel, Sampling.Unit.Name ~ value, length)
 }
 

@@ -1,91 +1,55 @@
 ---
-title: "Chapter 5 & 6 quarto version"
+title: "Experimenting with cameras based on trapping book"
 format: html
 editor: visual
 ---
 
 # Chapter 5
 
-## Install packages 
+## Install packages
 
 ```{r}
 rm(list=ls())
 source("TEAM library 1.7.R")
+library(tidyverse)
+library("here")
 library(chron) 
 library(reshape)
 library (vegan)
 library(plotrix)
-library(ggplot2) # included in tidyverse 
 library(maptools)
 # new for chapter 6 
 library(unmarked)
 library(AICcmodavg)
 library(MuMIn)
-library(plyr) # included in tidyverse
 library(R2jags)
 ```
 
-## Read in the data 
+## Read in the data
 
 ```{r}
-team_data<-read.csv(file="teamexample.csv", sep=",",h=T,stringsAsFactors=F)
+cams <-read.csv(here("Data","Pre_2020_cam_data.csv"))
 ```
 
-## IUCN Stuff (skip for the real) 
-
-add the ICUN dataframe
-
-```{r}
-iucn.full<-read.csv("IUCN.csv", sep=",",h=T)
-iucn<-iucn.full[,c("Class","Order","Family","Genus","Species")]
-team<-merge(iucn, team_data, all.y=T)
-```
-
-## "Fixing" the data 
-
-Creates two new columns - both of these are accounted for in my dataset
-
--   one with genus + species name
-
--   merge time and date
-
-```{r}
-data<-fix.dta(team) 
-
-data<- droplevels(data[data$bin!="Homo sapiens", ]) # remove Homo sapiens from data set do not to get rid of humans - not part of the dataset 
-```
-
-## Extracting the year 
-
-Not applicable for my data - we are doing all years and only mammals in et
-
-```{r}
-names(data)
-yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",]
-unique(yr2009$Sampling.Unit.Name)
-unique(yr2009$bin) # binomial name of species
-unique(yr2009$Camera.Start.Date.and.Time)
-unique(yr2009$Camera.End.Date.and.Time)
-```
-
-## Descriptive analysis 
+## Descriptive analysis
 
 ### Get data for camera trap days
 
 ```{r}
-camera_days<-cam.days(data,2009.01) # creates a new dataframe with a new column with the number of days within each unique range of time 
+camera_days<-cam.days(data,2020) # creates a new dataframe with a new column with the number of days within each unique range of time 
+# we already have this variable accounted for in our data (ndays)
 summary(camera_days[,2:4]) # just summarises the mean, 1st, 3rd, min, max for each column
 write.table(camera_days, file="camera_days_2009.txt",quote=F, sep="\t",row.names = F) 
 #turn into the a table
 ```
 
-### Independent events per time interval 
+### Independent events per time interval
 
 Thresh is a variable created here i think
 
 ```{r}
-events_hh<-event.sp(dtaframe=data, year=2009.01, thresh=60) #  thresh in minutes
-events_dd<-event.sp(dtaframe=data, year=2009.01, thresh=1440) # number of minutes in a day
+events_hh<-event.sp(dtaframe=cams, year=2020, thresh=60) #  thresh in minutes
+events_dd<-event.sp(dtaframe=cams, year=2020, thresh=1440) # number of minutes in a day
 # creates a matrix with the sampling unit and the presence of species (number of detection)
 ```
 
@@ -106,14 +70,14 @@ events_dd_species<-colSums(events_dd)
 write.table(events_dd_species, file="events_dd_species.txt",quote=F, sep="\t")
 ```
 
-### Cumulative events per site 
+### Cumulative events per site
 
 ```{r}
 cameras<-rowSums(events_hh)
 write.table(cameras, file="events_species.txt",quote=F, sep="\t")
 ```
 
-## Naive Occupancy 
+## Naive Occupancy
 
 ```{r}
 yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #I don't think we have to do this
@@ -126,59 +90,9 @@ write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.na
 
 ```
 
-## Plotting
+# Chapter 6
 
-```{r}
-# accumulation curve  
-accumulation<-acc.curve(data,2009.01)
-write.table(accumulation, file="accsp_2009.txt",quote=F, sep="\t")
-ggplot(accumulation, aes(x=Camera.trap.days, y=species)) +
-  geom_line(aes(y=species-sd), colour="grey50", linetype="dotted") +
-  geom_line(aes(y=species+sd), colour="grey50", linetype="dotted") +
-  theme_bw() +
-  geom_line()
-
-
-# activity pattern of species 
-activity_24h<-events.hours(yr2009)
-write.table(activity_24h, file="events_24hour_2009.txt",quote=F, sep="\t",row.names = F)
-
-activity_24h<-events.hours(data)
-
-# example of plotting activity pattern of selected species (3 forest antelope)
-clock<-c(0:23) 
-clock24.plot(activity_24h$Cephalophus.harveyi,clock,show.grid=T,lwd=2,line.col="blue", main="Cephalophus.harveyi",cex.lab=0.5)
-
-par(mfrow=c(1,3),cex.lab=0.5, cex.axis=0.5)
-clock24.plot(activity_24h$Cephalophus.spadix,clock,show.grid=T,lwd=2,line.col="green", main="Cephalophus.spadix")
-clock24.plot(activity_24h$Cephalophus.harveyi,clock,show.grid=T,lwd=2,line.col="blue", main="Cephalophus.harveyi")
-clock24.plot(activity_24h$Nesotragus.moschatus,clock,show.grid=T,lwd=2,line.col="red", main="Nesotragus.moschatus")
-
-# map of two species of sengi
-library(maptools)
-shape <- readShapeSpatial("park.shp", repair=T)
-
-ev.dd.map<-merge(unique(data[,c("Sampling.Unit.Name","Longitude","Latitude")]),events_dd)
-coord<-ev.dd.map[,c("Longitude","Latitude")]
-xy <- project(as.matrix(coord), "+proj=utm +zone=37 +south +ellps=clrk80 +units=m +no_defs")
-ev.dd.map$Longitude<-xy[,1]
-ev.dd.map$Latitude<-xy[,2]
-
-par(mfcol=c(1,2), mar=c(0.5,0.5,0.5,0.5), oma=c(1,1,1,1))
-plot(shape,axes=F)
-mtext("Rhynchocyon cirnei", cex = 1.5,font =3 )
-Rc<-ev.dd.map[,c("Rhynchocyon cirnei")]/max(ev.dd.map[,c("Rhynchocyon cirnei")])
-
-points(ev.dd.map[,"Longitude"],ev.dd.map[,"Latitude"],pch = 21,bg=grey(1-Rc))
-plot(shape,axes=F)
-mtext("Rhynchocyon udzungwensis",cex = 1.5, font =3)
-Ru<-ev.dd.map[,c("Rhynchocyon udzungwensis")]/max(ev.dd.map[,c("Rhynchocyon udzungwensis")])
-points(ev.dd.map[,"Longitude"],ev.dd.map[,"Latitude"],pch = 21,bg=grey(1-Ru))
-```
-
-# Chapter 6 
-
-## loading in data 
+## loading in data
 
 basically recapping stuff from chapter 5
 
@@ -192,7 +106,7 @@ fd<-fix.dta(team)
 yr2009<-fd[fd$Sampling.Event =="2009.01" & fd$Class=="MAMMALIA",]
 ```
 
-## Load co-variate data 
+## Load co-variate data
 
 can probably skip most of them, - need to standardize
 
@@ -208,7 +122,7 @@ covs<-data.frame(cov.fac, cov.std)
 covs
 ```
 
-## Create matrices for each species 
+## Create matrices for each species
 
 remeber mat is cam x day 0 or 1 y/n
 
@@ -222,14 +136,14 @@ naivetable
 
 ## Case study - single species
 
-### get new table? 
+### get new table?
 
 ```{r}
 Cs<-shrink(mat.udz.09[["Cercocebus sanjei"]],5)
 umCs<-unmarkedFrameOccu(y=Cs,siteCovs= covs)
 ```
 
-### Creates models for variables 
+### Creates models for variables
 
 ```{r}
 m0<- occu(~1~1,umCs)
@@ -248,7 +162,7 @@ m6<- occu(~edge+border~habitat,umCs)
 m7<- occu(~edge+border~habitat+border,umCs)
 ```
 
-### Examine one model 
+### Examine one model
 
 ```{r}
 m1
@@ -256,7 +170,7 @@ backTransform(linearComb(m1, coefficients = c(1, 0), type = "det"))
 backTransform(linearComb(m1, coefficients = c(1, 0), type = "state"))
 ```
 
-### Find model of best fit 
+### Find model of best fit
 
 ```{r}
 dlist<-fitList(Nullo = m0,d1=d1,d2=d2,d3=d3,o1=o1,o2=o2,o3=o3,m1=m1,m2=m2,m3=m3,m4=m4,m5=m5,m6=m6,m7=m7)
