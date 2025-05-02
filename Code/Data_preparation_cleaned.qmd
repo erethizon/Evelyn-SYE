@@ -371,15 +371,14 @@ landuse_by_camera <- merge(fisher_max, fisher_min) %>%
   merge(porcupine_F_min)%>%
   merge(porcupine_M_max)%>%
   merge(porcupine_M_min)
-  
-Add metadata
-=======
+```
 
-read in the data that has the camera IDs
 
+read in the camera data. also add metadata?
 ```{r}
 Camera_IDs <- read.csv(here("Data","Camera_IDs.csv"))
 ```
+
 
 to join these ID with the rest of the data we need to make sure the name of columns have to be the same
 
@@ -394,11 +393,9 @@ landuse_by_camera <- merge(Camera_IDs, landuse_by_camera)
 ```
 
 see what the camera trap catching data looks like
-<<<<<<< HEAD
-=======
+
 
 ```{r}
 cams <- read.csv(here("Data","AssignedSpecies_through_2023-06-13.csv"))
 ```
 
->>>>>>> 74f32d3b4fc8726b0e0aaad32955cad1c0718585
