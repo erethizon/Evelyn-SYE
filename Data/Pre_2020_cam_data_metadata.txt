@@ -1,0 +1,20 @@
+Medadata for the file "Pre_2020_cam_data.csv" created by Erika Barthelmess, 29 April 2025.
+
+Column names and descriptions:
+
+Camera.id.old = An older code we used for identifying a camera deployment
+Image = The name of the image file
+image.time.date = The date and time that the image was created, in M/D/Y H:M
+ndays = the number of days the particular camera deployment lasted. Also called "camera nights"
+cam.start.date = The date the camera was set up in the field
+cam.end.date = The date the camera was removed from the field
+choice = The species detected in the image
+date = just the M/D/Y that the image was taken
+time = the time that the image was taken, parsed from the image.time.date column. Probabaly represents number of seconds past midnight.
+event = Seems to be a year, but not sure. Ignore.
+Hour = The hour (in decimal form, so also includes minutes) when the picture was taken
+truncHour = A truncated version of the Hour column; average to the nearest hour and drop minutes
+TOD = a factor variable representing if the picture was taken during "day" or "night"; not sure what the break point was.
+Cam_num = The unique number assigned to the camera
+SD_card = The unique number of the SD card used in the camera
+Cam.SD = The "deployment name" which is a combination of the camera and SD card numbers

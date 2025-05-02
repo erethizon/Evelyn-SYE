@@ -63,7 +63,27 @@ roads$cam_buffer <- as.factor(roads$cam_buffer)
 
 If we glimpse again we can see that it is now registered as a factor with 287 levels. Because we have a total of 516 buffers, this means that there is not necessarily a road within each buffer. This means that there will be gaps and N/As that we will have to mind when joining this dataframe(or the new one we create) to the landuse one.
 
+<<<<<<< HEAD
 ## Need to re-export the data with the "distance variable attached and figure out what happened with the deployment number not loading.
+=======
+Lets create a new dataframe "buffers_roads"
+
+```{r}
+roads <- roads %>% 
+     group_by(cam_buffer) %>% mutate(
+     summarise(
+          total_length = sum(road_length_m)
+     ))
+```
+
+try and sync up some things
+
+```{r}
+buffers <- read.csv(here("Data","Camera_buffers.csv"))
+```
+
+Our variable titled "distance" is actually just the radius (km) of the buffer. lets change the name of the variable to represent that
+>>>>>>> 74f32d3b4fc8726b0e0aaad32955cad1c0718585
 
 ```{r}
 colnames(roads)[c(4)] <- "radius"
@@ -344,7 +364,6 @@ porcupine_M_max <- porcupine_M_max %>% mutate(camera = 1:n())
 porcupine_M_min <- porcupine_M_min %>% mutate(camera = 1:n())
 ```
 
-merge the dataframes together
 
 ```{r}
 landuse_by_camera <- merge(fisher_max, fisher_min) %>%
@@ -353,7 +372,8 @@ landuse_by_camera <- merge(fisher_max, fisher_min) %>%
   merge(porcupine_M_max)%>%
   merge(porcupine_M_min)
   
-```
+Add metadata
+=======
 
 read in the data that has the camera IDs
 
@@ -374,3 +394,11 @@ landuse_by_camera <- merge(Camera_IDs, landuse_by_camera)
 ```
 
 see what the camera trap catching data looks like
+<<<<<<< HEAD
+=======
+
+```{r}
+cams <- read.csv(here("Data","AssignedSpecies_through_2023-06-13.csv"))
+```
+
+>>>>>>> 74f32d3b4fc8726b0e0aaad32955cad1c0718585
