@@ -15,6 +15,8 @@ source("Code/TEAM library 1.7.R")
 library(chron) 
 library(reshape)
 library(tidyverse)
+library(lubridate)
+library(hms)
 library (vegan)
 library(plotrix)
 library(ggplot2) # included in tidyverse 
@@ -38,14 +40,14 @@ Fix the situation for C003_SD005 where it is two different deployments. Name sec
 
 ```{r}
 find<- which(data$Cam.SD == "C003_SD005" & data$cam.start.date == "5/10/19")
-view(data[find,])
 data$Cam.SD[find] <- "C003_SD0052"
-data %>% filter(Cam.SD =="C003_SD0052") %>% View()
+#data %>% filter(Cam.SD =="C003_SD0052") %>% View()
 ```
 
 ### Rename Variables
 
 ```{r}
+#rename columns to match TEAM example in book
 colnames(data)[16] <- "Sampling.Unit.Name"
 colnames(data)[10] <- "Sampling.Event"
 colnames(data)[5] <- "Start.Date"
@@ -59,47 +61,13 @@ colnames(data)[7] <- "bin"
 ### Change Dates
 
 ```{r}
-data$Start.Date <- parse_date_time(data$Start.Date,"mdy") # changes the date format to year-month-day
-data$End.Date <- parse_date_time(data$End.Date,"mdy")
-data$td.photo <- parse_date_time(data$td.photo, "mdy_HM")
-data$Photo.Date <- parse_date_time(data$Photo.Date, "mdy")
+data$td.photo <- mdy_hm(data$td.photo)
+data$Start.Date <- mdy(data$Start.Date)
+data$End.Date <- mdy(data$End.Date)
+data$Photo.Date <- mdy(data$Photo.Date)
+data$Photo.Time <- as_hms(data$td.photo)
 ```
 
-## (SKIP) IUCN Stuff
-
-add the ICUN dataframe
-
-```{r}
-#iucn.full<-read.csv("IUCN.csv", sep=",",h=T)
-#iucn<-iucn.full[,c("Class","Order","Family","Genus","Species")]
-#team<-merge(iucn, team_data, all.y=T)
-```
-
-## (SKIP)"Fixing" the data
-
-Creates two new columns - both of these are accounted for in my dataset
-
--   one with genus + species name
-
--   merge time and date
-
-```{r}
-#data<-fix.dta(team) 
-
-#data<- droplevels(data[data$bin!="Homo sapiens", ]) # remove Homo sapiens from data set do not to get rid of humans - not part of the dataset 
-```
-
-## (SKIP) Extracting the year
-
-Not applicable for my data - we are doing all years and only mammals in et
-
-```{r}
-#names(data)
-#yr2009<-data[data$Sampling.Event =="2009.01" & #data$Class=="MAMMALIA",]
-#unique(yr2009$bin) # binomial name of species
-#unique(yr2009$Camera.Start.Date.and.Time)
-#unique(yr2009$Camera.End.Date.and.Time)
-```
 
 ## Descriptive analysis
 
@@ -108,7 +76,7 @@ Not applicable for my data - we are doing all years and only mammals in et
 ```{r}
 camera_days<-cam.days(data,2020) # creates a new dataframe with a new column with the number of days within each unique range of time 
 summary(camera_days[,2:4]) # just summarises the mean, 1st, 3rd, min, max for each column
-write.table(camera_days, file="camera_days_2009.txt",quote=F, sep="\t",row.names = F) 
+#write.table(camera_days, file="camera_days_2009.txt",quote=F, sep="\t",row.names = F) 
 #turn into the a table
 ```
 
@@ -140,25 +108,25 @@ events_dd<-event.sp1(dtaframe=data, year=2020, thresh=1440) # number of minutes 
 saving away tables with events by species and camera site
 
 ```{r}
-write.table(events_hh, file="my_events_hh.txt",quote=F, sep="\t")
-write.table(events_dd, file="my_events_dd.txt",quote=F, sep="\t")
+# write.table(events_hh, file="my_events_hh.txt",quote=F, sep="\t")
+# write.table(events_dd, file="my_events_dd.txt",quote=F, sep="\t")
 ```
 
 ### Cumulative events per species (tables)
 
 ```{r}
 events_hh_species<-colSums(events_hh)
-write.table(events_hh_species, file="my_events_hh_species.txt", quote=F, sep="\t")
+#write.table(events_hh_species, file="my_events_hh_species.txt", quote=F, sep="\t")
 
 events_dd_species<-colSums(events_dd)
-write.table(events_dd_species, file="my_events_dd_species.txt",quote=F, sep="\t")
+#write.table(events_dd_species, file="my_events_dd_species.txt",quote=F, sep="\t")
 ```
 
 ### Cumulative events per site
 
 ```{r}
 cameras<-rowSums(events_hh)
-write.table(cameras, file="my_events_species.txt",quote=F, sep="\t")
+#write.table(cameras, file="my_events_species.txt",quote=F, sep="\t")
 ```
 
 ## Naive Occupancy
@@ -181,7 +149,7 @@ f.matrix.creator1<-function(data){
 	cols<-max-min+1
 	
 	#sampling period
-	date.header<-seq(from=min,to=max, by=86400)
+	date.header<-seq(from=min,to=max, by=1)
 	mat<-matrix(NA,rows,cols,dimnames=list(cams,as.character(date.header)))
 	
 	#for all cameras, determine the open and close date and mark in the matrix
@@ -243,26 +211,17 @@ f.matrix.creator1<-function(data){
 
 
 ```{r}
-#yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #I don't think we have to do this
 mat<-f.matrix.creator1(data) # list of matrices camera x days for each species
 # matrix of 124 x 58 - the 58 sampling units 
 NAI<-naive(mat) # get naive occupancy for each species
 
 
-write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.names = F)
+#write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.names = F)
 
 ```
 
-
-
-
-## (SKIP FOR NOW) Plotting
-
-```{r}
-# accumulation curve  
-accumulation<-acc.curve(data,2020)
-```
-
+##Plotting
+Retrofit their acc.curve function to match with f.matrix.creator1
 
 ```{r}
 # the function returns the observed species accumulation curve for a given year
@@ -286,7 +245,7 @@ acc.curve <- function(dtaframe, year) {
 ```{r}
 # accumulation curve  
 accumulation<-acc.curve(data,2020)
-write.table(accumulation, file="accsp_2009.txt",quote=F, sep="\t")
+#write.table(accumulation, file="accsp_2009.txt",quote=F, sep="\t")
 ggplot(accumulation, aes(x=Camera.trap.days, y=species)) +
   geom_line(aes(y=species-sd), colour="grey50", linetype="dotted") +
   geom_line(aes(y=species+sd), colour="grey50", linetype="dotted") +
@@ -295,74 +254,94 @@ ggplot(accumulation, aes(x=Camera.trap.days, y=species)) +
 ```
 
 ### Works to here
+Need to fix their events.hours function. Here's the code to tweak:
+
+```{r}
+# the function returns the matrix species by hours to be used for activity profile (it uses all the available years)
+events.hours <- function(dtaframe) {
+    require(reshape)
+    require(chron)
+    dtaframe$ore <- trunc(dtaframe$Photo.Time, "hours")
+    selvar <- subset(dtaframe, select = c(Sampling.Unit.Name, Photo.Date, bin, ore))
+    ev.hr <- unique(selvar)
+    ev.hr <- ev.hr %>% rename(value = ore)
+    ev.sp <- cast(ev.hr, value ~ bin, length)
+    colnames(ev.sp) <- sub(" ", ".", colnames(ev.sp))
+    return(ev.sp)
+}
+```
 
 
+```{r}
 # activity pattern of species 
 #need variable that corresponds to the book's yr2009
 #they use yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #Should just correspond to our data
-activity_24h<-events.hours(yr2009)
-write.table(activity_24h, file="events_24hour_2009.txt",quote=F, sep="\t",row.names = F)
 
 activity_24h<-events.hours(data)
 
-# example of plotting activity pattern of selected species (3 forest antelope)
+# example of plotting activity pattern of selected species (3 species; porcupine, fisher, snowshoehare)
 clock<-c(0:23) 
-clock24.plot(activity_24h$Cephalophus.harveyi,clock,show.grid=T,lwd=2,line.col="blue", main="Cephalophus.harveyi",cex.lab=0.5)
+clock24.plot(activity_24h$PORCUPINE,clock,show.grid=T,lwd=2,line.col="blue", main="Porcupine",cex.lab=0.5)
 
 par(mfrow=c(1,3),cex.lab=0.5, cex.axis=0.5)
-clock24.plot(activity_24h$Cephalophus.spadix,clock,show.grid=T,lwd=2,line.col="green", main="Cephalophus.spadix")
-clock24.plot(activity_24h$Cephalophus.harveyi,clock,show.grid=T,lwd=2,line.col="blue", main="Cephalophus.harveyi")
-clock24.plot(activity_24h$Nesotragus.moschatus,clock,show.grid=T,lwd=2,line.col="red", main="Nesotragus.moschatus")
-
-# map of two species of sengi
-library(maptools)
-shape <- readShapeSpatial("park.shp", repair=T)
-
-ev.dd.map<-merge(unique(data[,c("Sampling.Unit.Name","Longitude","Latitude")]),events_dd)
-coord<-ev.dd.map[,c("Longitude","Latitude")]
-xy <- project(as.matrix(coord), "+proj=utm +zone=37 +south +ellps=clrk80 +units=m +no_defs")
-ev.dd.map$Longitude<-xy[,1]
-ev.dd.map$Latitude<-xy[,2]
-
-par(mfcol=c(1,2), mar=c(0.5,0.5,0.5,0.5), oma=c(1,1,1,1))
-plot(shape,axes=F)
-mtext("Rhynchocyon cirnei", cex = 1.5,font =3 )
-Rc<-ev.dd.map[,c("Rhynchocyon cirnei")]/max(ev.dd.map[,c("Rhynchocyon cirnei")])
-
-points(ev.dd.map[,"Longitude"],ev.dd.map[,"Latitude"],pch = 21,bg=grey(1-Rc))
-plot(shape,axes=F)
-mtext("Rhynchocyon udzungwensis",cex = 1.5, font =3)
-Ru<-ev.dd.map[,c("Rhynchocyon udzungwensis")]/max(ev.dd.map[,c("Rhynchocyon udzungwensis")])
-points(ev.dd.map[,"Longitude"],ev.dd.map[,"Latitude"],pch = 21,bg=grey(1-Ru))
+clock24.plot(activity_24h$PORCUPINE,clock,show.grid=T,lwd=2,line.col="green", main="Porcupine")
+clock24.plot(activity_24h$FISHER,clock,show.grid=T,lwd=2,line.col="blue", main="Fisher")
+clock24.plot(activity_24h$SNOWSHOEHARE,clock,show.grid=T,lwd=2,line.col="red", main="Snowshoe hare")
 ```
+
+Getting rid of mapping as camera locations not in data
+
 
 # Chapter 6
 
 ## loading in data
 
 basically recapping stuff from chapter 5
-
+Let's clean up
 ```{r}
-team_data<-read.csv(file="Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F) #do 
-#can skip the rest in this chunk for my data 
-#iucn.full<-read.csv("IUCN.csv", sep=",",h=T)
-#iucn<-iucn.full[,c("Class","Order","Family","Genus","Species")]
-#team<-merge(iucn, team_data, all.y=T)
-#fd<-fix.dta(team)
-#yr2009<-fd[fd$Sampling.Event =="2009.01" & fd$Class=="MAMMALIA",]
+rm(list = ls())
+source("Code/TEAM library 1.7.R")
+library(chron) 
+library(reshape)
+library(tidyverse)
+library(lubridate)
+library(hms)
+library (vegan)
+library(plotrix)
+library(ggplot2) # included in tidyverse 
+#library(maptools)
+# new for chapter 6 
+library(unmarked)
+library(AICcmodavg)
+#library(MuMIn)
+#library(plyr) # included in tidyverse
+#library(R2jags)
 ```
 
-## Load co-variate data
+
+## Load data
 
 can probably skip most of them, - need to standardize
 
 ```{r}
-cov<-read.table("covariates.txt", header=TRUE) # table row per sampling unit
+cov<-read.table("Data/covariates.txt", header=TRUE) # table row per sampling unit
+data <-read.csv("Data/teamexample.csv", header = TRUE)
+yr2009<-data[data$Sampling.Event =="2009.01",]
 workingcam<-which(cov$Sampling.Unit.Name %in% unique(yr2009$Sampling.Unit.Name)) # removing cameras that did not work
 cov.or<-cov[workingcam, ] # retain only working cameras in 2009
 #we are using the cameras for all years and they are all working
 cov.num<-cov.or[,sapply(cov.or,is.numeric)]
-cov.std<-decostand(cov.num,method="standardize")
+cov.std<-decostand(cov.num,method="standardize") #z-score normalization; according to ChatGPT: With method = "standardize", the function:
+# 	•	Centers each variable (i.e., subtracts the mean),
+# 	•	Then scales it (i.e., divides by the standard deviation),
+# 	•	So each column ends up with a mean of 0 and a standard deviation of 1.
+# 
+# This is also known as z-score normalization.
+# 
+# Standardizing is helpful when:
+# 	•	Your variables are on different scales (e.g., one is in meters, another in kilograms),
+# 	•	You want to compare variables fairly (e.g., in PCA, clustering, or ordination),
+# 	•	You’re preparing data for many ecological or multivariate analyses in vegan.
 cov.fac<-cov.or[,sapply(cov.or,is.factor)]  # extract factor variables
 covs<-data.frame(cov.fac, cov.std)
 covs
@@ -372,13 +351,24 @@ covs
 
 remeber mat is cam x day 0 or 1 y/n
 
+Need column called Start.Date and End.Date in yr2009 that is POSIXct and also need genus species in a column called bin
 ```{r}
-mat.udz.09<-f.matrix.creator(yr2009)
+yr2009$Start.Date <-as_date(ymd_hms(yr2009$Camera.Start.Date.and.Time))
+yr2009$End.Date <- as_date(ymd_hms(yr2009$Camera.End.Date.and.Time))
+yr2009$bin <- paste0(yr2009$Genus, " ", yr2009$Species)
+```
+
+
+```{r}
+mat.udz.09<-f.matrix.creator1(yr2009)
 names(mat.udz.09) # each species has its own table 
 # I could just do this whole thing and then just export the two tables for porcupine and fisher 
 naivetable<-naive(mat.udz.09) 
 naivetable
 ```
+
+
+##WORKING TO HERE WITH THEIR CODE
 
 ## Case study - single species
 
