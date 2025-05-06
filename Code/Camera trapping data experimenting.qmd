@@ -11,7 +11,7 @@ editor: visual
 
 ```{r}
 rm(list=ls())
-source("TEAM library 1.7.R")
+source("Code/TEAM library 1.7.R")
 library(chron) 
 library(reshape)
 library(tidyverse)
@@ -30,10 +30,18 @@ library(AICcmodavg)
 ## Read in the data
 
 ```{r}
-data<-read.csv(file="Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F)
+data<-read.csv(file="Data/Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F)
 ```
 
 ## Prepare Data
+Fix the situation for C003_SD005 where it is two different deployments. Name second deployment C003_SD0052
+
+```{r}
+find<- which(data$Cam.SD == "C003_SD005" & data$cam.start.date == "5/10/19")
+view(data[find,])
+data$Cam.SD[find] <- "C003_SD0052"
+data %>% filter(Cam.SD =="C003_SD0052") %>% View()
+```
 
 ### Rename Variables
 
@@ -154,25 +162,7 @@ write.table(cameras, file="my_events_species.txt",quote=F, sep="\t")
 ```
 
 ## Naive Occupancy
-
-```{r}
-#yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #I don't think we have to do this
-mat<-f.matrix.creator1(2020) # list of matrices camera x days for each species
-# matrix of 124 x 58 - the 58 sampling units 
-naive_occu_2009<-naive(mat) # get naive occupancy for each species
-
-
-write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.names = F)
-
-```
-
-f.matrix.creator error
-
-Error in data\$Sampling.Unit.Name : \$ operator is invalid for atomic vectors
-
-troubleshooting
-
-The function
+Make new version of f.matrix.creator called f.matrix.creator1
 
 ```{r}
 f.matrix.creator1<-function(data){
@@ -196,13 +186,21 @@ f.matrix.creator1<-function(data){
 	
 	#for all cameras, determine the open and close date and mark in the matrix
 	start.dates<-tapply(as.character(data$Start.Date),data$Sampling.Unit.Name,unique)
-	end.dates<-tapply(as.character(data$End.Date),data$Sampling.Unit.Name,unique)
+	#convert to data frame
+	start.dates <- stack(start.dates) #convert to data frame
+	names(start.dates) <- c("Start.Date", "Sampling.Unit.Name")
 	
+	end.dates<-tapply(as.character(data$End.Date),data$Sampling.Unit.Name,unique)
+	end.dates <- stack(end.dates) #convert to data frame
+	names(end.dates) <- c("End.Date", "Sampling.Unit.Name")
+	
+
 	#outline the sampling periods for each camera j
 	for(j in 1:length(start.dates)){
 		#for each camera beginning and end of sampling
-		low<-which(date.header==start.dates[j])
-		hi<-which(date.header==end.dates[j])
+	  
+		low<-which(date.header==data$Start.Date[j])
+		hi<-which(date.header==data$End.Date[j])
 		indx<-seq(from=low,to=hi)
 		mat[j,indx]<-0
 		}
@@ -243,103 +241,65 @@ f.matrix.creator1<-function(data){
 	}
 ```
 
-##### Erika, This part below is where it is breaking.
-
-un-functioning it
 
 ```{r}
-#f.matrix.creator<-function(data){
-	#results object
-	res<-list() 
-	
-	#get the dimensions of the matrix
-	
-	#list if sanpling units
-	cams<-unique(data$Sampling.Unit.Name)
-	cams<-sort(cams)
-	rows<-length(cams)
-	#start and end dates of sampling periods
-	min<-min(data$Start.Date)
-	max<-max(data$End.Date)
-	cols<-max-min+1
-	
-	#sampling period
-	date.header<-seq(from=min,to=max, by=86400) # number of seconds in a day
-	mat<-matrix(NA,rows,cols,dimnames=list(cams,as.character(date.header)))
-	
-	#for all cameras, determine the open and close date and mark in the matrix
-	start.dates<-tapply(as.character(data$Start.Date),data$Sampling.Unit.Name,unique)
-	end.dates<-tapply(as.character(data$End.Date),data$Sampling.Unit.Name,unique)
-	
-	#outline the sampling periods for each camera j
-	for(j in 1:length(start.dates)){
-		#for each camera beginning and end of sampling
-		low<-which(date.header==data$Start.Date[j])
-		hi<-which(date.header==data$End.Date[j])
-		indx<-seq(from=low,to=hi)
-		mat[j,indx]<-0
-		}
-	#	mat.template<-mat
-				#get the species
-		species<-unique(data$bin)
-		#construct the matrix for each species i
-		for(i in 1:length(species)){
-			indx<-which(data$bin==species[i])
-			#dates and cameras when/where the species was photographed
-			dates<-data$Photo.Date[indx]
-			cameras<-data$Sampling.Unit.Name[indx]
-			dates.cameras<-data.frame(dates,cameras)
-			#unique combination of dates and cameras 
-			dates.cameras<-unique(dates.cameras)
-			#fill in the matrix
-			for(j in 1:length(dates.cameras[,1])){
-				col<-which(date.header==dates.cameras[j,1])
-				row<-which(cams==dates.cameras[j,2])
-				mat[row,col]<-1
-				}
-			mat.nas<-is.na(mat)
-			sum.nas<-apply(mat.nas,2,sum)
-			indx.nas<-which(sum.nas==rows)
-			if(length(indx.nas)>0){
-			mat<-mat[,-indx.nas]
-			}
-	
-			res<-c(res,list(mat))
-			#return the matrix to its original form
-			mat<-mat.template
-			}
-			
-		names(res)<-species
-		#res<-lapply(res,f.dum)
-		res
-	
-	
+#yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #I don't think we have to do this
+mat<-f.matrix.creator1(data) # list of matrices camera x days for each species
+# matrix of 124 x 58 - the 58 sampling units 
+NAI<-naive(mat) # get naive occupancy for each species
+
+
+write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.names = F)
+
 ```
 
-Here is where the error is occuring mat\<-matrix(NA,rows,cols,dimnames=list(cams,as.character(date.header)))
 
-```         
-Error in matrix(NA, rows, cols, dimnames = list(cams, as.character(date.header))) :    length of 'dimnames' [2] not equal to array extent
-```
 
-the problem is that the date.header does no match the cols. the issue is that we have time and date in date.header, not just the date, making it a lot bigger.
-
-fixed! - made the sequence increment for header 86400 - number of seconds in a day
 
 ## (SKIP FOR NOW) Plotting
 
 ```{r}
 # accumulation curve  
-accumulation<-acc.curve(data,2009.01)
+accumulation<-acc.curve(data,2020)
+```
+
+
+```{r}
+# the function returns the observed species accumulation curve for a given year
+acc.curve <- function(dtaframe, year) {
+    require(reshape)
+    require(vegan)
+    yr <- dtaframe[dtaframe$Sampling.Event == year, ]
+    mat <- f.matrix.creator1(yr)
+    pr <- melt(mat)
+    colnames(pr) <- c("Sampling.Unit.Name", "Date", "value", "species")
+    ev.sp <- cast(na.omit(pr), Sampling.Unit.Name + Date ~ species, sum)
+    ac <- specaccum(ev.sp[, -c(1:2)], method = "random", permutations = 100)
+    mt <- data.frame(ac$sites, ac$richness, ac$sd)
+    colnames(mt) <- c("Camera.trap.days", "species", "sd")
+    return(mt)
+}
+```
+
+
+
+```{r}
+# accumulation curve  
+accumulation<-acc.curve(data,2020)
 write.table(accumulation, file="accsp_2009.txt",quote=F, sep="\t")
 ggplot(accumulation, aes(x=Camera.trap.days, y=species)) +
   geom_line(aes(y=species-sd), colour="grey50", linetype="dotted") +
   geom_line(aes(y=species+sd), colour="grey50", linetype="dotted") +
   theme_bw() +
   geom_line()
+```
+
+### Works to here
 
 
 # activity pattern of species 
+#need variable that corresponds to the book's yr2009
+#they use yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #Should just correspond to our data
 activity_24h<-events.hours(yr2009)
 write.table(activity_24h, file="events_24hour_2009.txt",quote=F, sep="\t",row.names = F)
 
