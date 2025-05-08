@@ -14,6 +14,7 @@ source("TEAM library 1.7.R")
 library(chron) 
 library(reshape)
 library(tidyverse)
+library(here)
 library (vegan)
 library(plotrix)
 library(ggplot2) # included in tidyverse 
@@ -30,6 +31,7 @@ library(AICcmodavg)
 
 ```{r}
 data<-read.csv(file="Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F)
+data <- read.csv(here("Data","Pre_2020_cam_data.csv"))
 ```
 
 ## Prepare Data
