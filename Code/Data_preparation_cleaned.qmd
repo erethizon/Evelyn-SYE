@@ -118,16 +118,6 @@ I will choose to convert the variable cam_buffer into a factor variable
 
 If we glimpse again we can see that it is now registered as a factor with 287 levels. Because we have a total of 516 buffers, this means that there is not necessarily a road within each buffer. This means that there will be gaps and N/As that we will have to mind when joining this dataframe(or the new one we create) to the landuse one.
 
-Lets create a new dataframe "buffers_roads"
-
-```{r}
-#roads <- roads %>% 
-    # group_by(cam_buffer) %>% mutate(
-     #summarise(
-      #    total_length = sum(road_length_m)
-     ))
-```
-
 try and sync up some things
 
 ```{r}
@@ -145,7 +135,6 @@ Now lets find the ratio of m road to square km of buffer
 ```{r}
 #roads <- roads %>% mutate(
   #road_density = road_length_m/buffer_area_km2
-)
 ```
 
 I still only want the total
@@ -169,7 +158,7 @@ We now have a new csv file containing only this data. yay!
  #    group_by(cam_buffer) %>%
   #   summarise(
    #       total_length = sum(road_length_m)
-     )
+
 ```
 
 ## Landuse Data
@@ -564,12 +553,42 @@ fisher_min <- fisher_min %>%
   select(4,6)
 ```
 
-# Erika help
-
-Now merge the road densities back together
+## Merging covariates together 
 
 ```{r}
-road_densities <- merge(porcupine_f_min, porcupine_f_max)
+road_densities <- merge(landuse_by_camera, porcupine_f_max, by="deployment", all=TRUE) %>%
+  merge(porcupine_f_min, by="deployment", all=TRUE) %>%
+  merge(porcupine_m_max, by="deployment", all=TRUE) %>%
+  merge(porcupine_m_min, by="deployment", all=TRUE) %>%
+  merge(fisher_max, by="deployment", all=TRUE) %>%
+  merge(fisher_min, by="deployment", all=TRUE) %>%
+  merge(cams_simple, by="deployment", all=TRUE)
+
 ```
 
-## Merging the covariates together
+Its creating multiples of some but not of others - C0321 is especially an issue
+
+use distinct() to make a dataframe with only the unique entires
+
+```{r}
+covariates <- distinct(road_densities, deployment, .keep_all = TRUE)
+```
+
+move the cam_SD to the front
+
+```{r}
+covariates <- covariates %>%
+  select(Cam_SD, everything())
+```
+
+save the covariates as a new dataframe
+
+```{r}
+write.csv(covariates, here("Data","ERDO_PEPE_covariates.csv"))
+```
+
+do so as a table too cause thats what the book has
+
+```{r}
+write.table(covariates, here("Data","ERDO_PEPE_covariates.txt"))
+```
