@@ -23,14 +23,12 @@ library(janitor) #helps with reformating data
 
 # Data Clean-up
 
-# DEPLOYMENT \# DIDN'T EXPORT
-
 ## Road Data
 
 Import the data and give it a name
 
 ```{r}
-roads <- read.csv(here("Data","correct_cam_road_sum.csv"))
+roads <- read.csv(here("Data","road_total_by_buffer.csv"))
 ```
 
 preview the data
@@ -39,69 +37,120 @@ preview the data
 glimpse(roads)
 ```
 
-**See Erika comment on Data_preparation.qmd about getting the other data from GIS**
+### Address the lack of deployment number exporting 
+
+The deployment numbers did not export properly. idk what happened but the way I am going to address this by merging the data with a portion of the full data from a camera.
+
+read in the data
+
+```{r}
+cam_data <- read.csv(here("Data","full_camera_data.csv"))
+```
+
+there are 54 variables, we do not need all of them so we are going to extract the ones that we are going to use in the future and create a new dataframe
+
+the variables we want are - deployment #\[1\], cam sd\[12\], distance(of radius of buffer. will be used to calculate the total area)\[49\]and buffer name\[54\],
+
+lets use the select function to grab those column
+
+FID multiring buffer = orig ID - joining things. BUT orig ID doesn't export with the full data
+
+```{r}
+cam_data_simplified <- cam_data %>%
+  select(1,12,49,54)
+```
+
+####See Erika comment on Data_preparation.qmd about getting the other data from GIS
 
 What we intend to use this data for is to determine the road density withing each buffer. Therefore we are going to need to rearrange this data so that we have a row entry per buffer and a total amount of road within it. The issue is that GIS takes takes the amount of road and segments it. It also has different entries for each of the roads that may be within the buffer. Therefore we will consolidate all of the road within a buffer into a single entry.
 
 before we move on to getting these totals, lets rename the Shape_Leng column so that it makes more sense for our data.
 
+merge the dataframes together
+
 ```{r}
-colnames(roads)[4] <- "road_length_m"
+road_density <- merge(cam_data_simplified,roads)
 ```
 
-Now to reshape our data and find the total amount of road per buffer
+rename the column of total road length to be a more accurate descriptor
 
-### Calculating total amount of road per buffer
+```{r}
+colnames(road_density)[7] <- "road_length_m"
+```
+
+### Calculating total road area
+
+lets ass another column with the total area of the buffer. this will be calculated using the "distance" variable
+
+lets rename the distance variable to represent its nature first
+
+```{r}
+colnames(road_density)[4] <- "radius"
+```
+
+Now to calculate the total area
+
+```{r}
+road_density <- road_density%>% mutate(
+  buffer_area_km2 = pi * radius * radius
+)
+```
+
+Now calculate the road density per buffer
+
+```{r}
+road_density <- road_density %>% mutate(
+  road_density_m_per_km2 = road_length_m/buffer_area_km2
+)
+```
+
+finally, lets shave this data frame down to the relevant columns and export it as a new csv to save for later
+
+```{r}
+road_density <- road_density %>%
+  select(1,3,10)
+write.csv(road_density, here("Data","Road_density.csv"))
+```
+
+### (SKIP NOW)Calculating total amount of road per buffer
 
 A prerequisite to any grouping is conversions of some values into factors. There are multiple variables that all represent the same thing, the buffer ID, in this dataframe. We just need to choose one to convert and use for our variable.
 
 I will choose to convert the variable cam_buffer into a factor variable
 
 ```{r}
-roads$cam_buffer <- as.factor(roads$cam_buffer)
+#roads$cam_buffer <- as.factor(roads$cam_buffer)
 ```
 
 If we glimpse again we can see that it is now registered as a factor with 287 levels. Because we have a total of 516 buffers, this means that there is not necessarily a road within each buffer. This means that there will be gaps and N/As that we will have to mind when joining this dataframe(or the new one we create) to the landuse one.
 
-<<<<<<< HEAD
-## Need to re-export the data with the "distance variable attached and figure out what happened with the deployment number not loading.
-=======
 Lets create a new dataframe "buffers_roads"
 
 ```{r}
-roads <- roads %>% 
-     group_by(cam_buffer) %>% mutate(
-     summarise(
-          total_length = sum(road_length_m)
+#roads <- roads %>% 
+    # group_by(cam_buffer) %>% mutate(
+     #summarise(
+      #    total_length = sum(road_length_m)
      ))
 ```
 
 try and sync up some things
 
 ```{r}
-buffers <- read.csv(here("Data","Camera_buffers.csv"))
+#buffers <- read.csv(here("Data","Camera_buffers.csv"))
 ```
 
 Our variable titled "distance" is actually just the radius (km) of the buffer. lets change the name of the variable to represent that
->>>>>>> 74f32d3b4fc8726b0e0aaad32955cad1c0718585
 
 ```{r}
-colnames(roads)[c(4)] <- "radius"
-```
-
-Now lets create a new column for the total area of the buffer to compare the total amount of road divided by area per buffer
-
-```{r}
-roads <- roads %>% mutate(
-  buffer_area_km2 = pi * radius * radius
-)
+#colnames(roads)[c(4)] <- "radius"
 ```
 
 Now lets find the ratio of m road to square km of buffer
 
 ```{r}
-roads <- roads %>% mutate(
-  road_density = road_length_m/buffer_area_km2
+#roads <- roads %>% mutate(
+  #road_density = road_length_m/buffer_area_km2
 )
 ```
 
@@ -110,22 +159,22 @@ I still only want the total
 Lets take a quick look at this new dataframe
 
 ```{r}
-view(buffer_roads)
+#view(buffer_roads)
 ```
 
 looks good now we shall export the dataframe
 
 ```{r}
-write.csv(buffer_roads, here("Data","Buffers_roads.csv"),row.names = F)# add row.names = F when you write csv files to prevent the strange "X" in column names and to prevent addition of extra columns when you read in the data
+#write.csv(buffer_roads, here("Data","Buffers_roads.csv"),row.names = F)# add row.names = F when you write csv files to prevent the strange "X" in column names and to prevent addition of extra columns when you read in the data
 ```
 
 We now have a new csv file containing only this data. yay!
 
 ```{r}
-buffer_roads <- roads %>%
-     group_by(cam_buffer) %>%
-     summarise(
-          total_length = sum(road_length_m)
+#buffer_roads <- roads %>%
+ #    group_by(cam_buffer) %>%
+  #   summarise(
+   #       total_length = sum(road_length_m)
      )
 ```
 
@@ -134,7 +183,7 @@ buffer_roads <- roads %>%
 Before moving onto altering the landuse data, let's clear our environment again
 
 ```{r}
-rm(list = ls())
+#rm(list = ls())
 ```
 
 ### Reading in and merging datasets
@@ -144,15 +193,15 @@ because GIS wouldnt export all 516 values in the table at once, I divided the ex
 Read in the three datasets
 
 ```{r}
-fishers <- read.csv(here("Data","PEPE_landuse.csv"))
-porcupines_f <- read.csv(here("Data","ERDO_F_landuse.csv"))
-porcupines_m <- read.csv(here("Data","ERDO_M_landuse.csv"))
+#fishers <- read.csv(here("Data","PEPE_landuse.csv"))
+#porcupines_f <- read.csv(here("Data","ERDO_F_landuse.csv"))
+#porcupines_m <- read.csv(here("Data","ERDO_M_landuse.csv"))
 ```
 
 This has now been done- but its saved on the pc so im gonna mess with it afterwards
 
 ```{r}
-landuse <- read.csv(here("Data","landuse_fix.csv"))
+#landuse <- read.csv(here("Data","landuse_fix.csv"))
 ```
 
 ## FIX THIS!!!
@@ -160,8 +209,8 @@ landuse <- read.csv(here("Data","landuse_fix.csv"))
 Now merge the three together
 
 ```{r}
-landuse <- merge(fishers,porcupines_f)%>%
-  merge(porcupines_m) #the piping allows for the merging three dataframes 
+#landuse <- merge(fishers,porcupines_f)%>%
+ # merge(porcupines_m) #the piping allows for the merging three dataframes 
 ```
 
 SKIP to here now
@@ -169,7 +218,7 @@ SKIP to here now
 ## New Dataframe from GIS
 
 ```{r}
-landuse <- read.csv(here("Data","landuse_fix.cs"))
+landuse <- read.csv(here("Data","landuse_fix.csv"))
 ```
 
 Now time to flip the data into the way we want it to be
@@ -293,7 +342,7 @@ landuse <- landuse %>% mutate(
 
 Right now, our dataframe entries are the buffer, but we want it to be the camera instead and the landuse category to merge with the buffer name.
 
-**I am going to experiment.**
+I am going to experiment.
 
 What i need to do is for each column of a camera, add the buffer to the landuse class so that there are 211 columns, the initial ID and then 6 sets of the 35 landuse data for each buffer type. I just have no clue where to even begin approaching doing that. After every 86 rows, the data needs to the data needs to be reformatted to become a new set of rows.
 
@@ -308,22 +357,13 @@ slice the landuse dataframe to get 6 new dataframes each representing a new buff
 ```{r}
 fisher_max <- slice(landuse, 1:344) 
 fisher_min <- slice(landuse, 345:688)
-porcupine_F_max <- slice(landuse, 689:1032)
-porcupine_F_min <- slice(landuse, 1033:1376)
-porcupine_M_max <- slice(landuse, 1377:1720)
-porcupine_M_min <- slice(landuse, 1721:2064)
+porcupine_M_max <- slice(landuse, 689:1032)
+porcupine_M_min <- slice(landuse, 1033:1376)
+porcupine_F_max <- slice(landuse, 1377:1720)
+porcupine_F_min <- slice(landuse, 1721:2064)
 ```
 
 lets also delete the first column for all of these. this is because our buffer names will now be incorporated into the column names. we will set the x column to null
-
-```{r}
-fisher_max$X <- NULL
-fisher_min$X <- NULL
-porcupine_F_max$X <- NULL
-porcupine_F_min$X <- NULL
-porcupine_M_max$X <- NULL
-porcupine_M_min$X <- NULL
-```
 
 Now to change the names of the columns to integrate the buffer. this is something I am googling first
 
@@ -355,47 +395,174 @@ now lets create a new row for each of them that just lists the number 1-86
 
 use dyplr verb mutate to create a new column
 
-```{r}
-fisher_max <- fisher_max %>% mutate(camera = 1:n())
-fisher_min <- fisher_min %>% mutate(camera = 1:n())
-porcupine_F_max <- porcupine_F_max %>% mutate(camera = 1:n())
-porcupine_F_min <- porcupine_F_min %>% mutate(camera = 1:n())
-porcupine_M_max <- porcupine_M_max %>% mutate(camera = 1:n())
-porcupine_M_min <- porcupine_M_min %>% mutate(camera = 1:n())
-```
-
+create a new deploymen number variable using the lapply and gsub() lets start with the max fisher buffer
 
 ```{r}
-landuse_by_camera <- merge(fisher_max, fisher_min) %>%
-  merge(porcupine_F_max)%>%
-  merge(porcupine_F_min)%>%
-  merge(porcupine_M_max)%>%
-  merge(porcupine_M_min)
+fisher_max$deployment <- gsub("P2_","",fisher_max$PEPE_max_X)
 ```
 
+it worked, now for the rest
+
+```{r}
+fisher_min$deployment <- gsub("P1_","",fisher_min$PEPE_min_X)
+
+porcupine_F_max$deployment <- gsub("EF2_","",porcupine_F_max$ERDO_F_max_X)
+
+porcupine_M_max$deployment <- gsub("EM2_","",porcupine_M_max$ERDO_M_max_X)
+
+porcupine_F_min$deployment <- gsub("EF1_","",porcupine_F_min$ERDO_F_min_X)
+
+porcupine_M_min$deployment <- gsub("EM1_","",porcupine_M_min$ERDO_M_min_X)
+
+
+```
+
+get rid of the old "X" for easier merging
+
+```{r}
+fisher_max$PEPE_max_X <- NULL
+fisher_min$PEPE_min_X <- NULL
+porcupine_F_max$ERDO_F_max_X <- NULL
+porcupine_F_min$ERDO_F_min_X <- NULL
+porcupine_M_max$ERDO_M_max_X <- NULL
+porcupine_M_min$ERDO_M_min_X <- NULL
+```
+
+now merge the variables together
+
+```{r}
+landuse_by_camera <- merge(fisher_max, fisher_min)
+landuse_by_camera <- merge(landuse_by_camera, porcupine_F_max)
+landuse_by_camera <-  merge(landuse_by_camera,porcupine_F_min)
+landuse_by_camera <- merge(landuse_by_camera,porcupine_M_max)
+landuse_by_camera <-merge(landuse_by_camera,porcupine_M_min)
+```
 
 read in the camera data. also add metadata?
-```{r}
-Camera_IDs <- read.csv(here("Data","Camera_IDs.csv"))
-```
 
-
-to join these ID with the rest of the data we need to make sure the name of columns have to be the same
+edit the camera data to be mergeable
 
 ```{r}
-colnames(Camera_IDs)[1] <- "camera"
+Camera_IDs <- read.csv(here("Data","full_camera_data.csv"))
 ```
 
-now merge the two dataframes together
+we just want deployment and c
 
 ```{r}
-landuse_by_camera <- merge(Camera_IDs, landuse_by_camera)
+cams_simple <- Camera_IDs %>%
+  select(1,12)
 ```
 
-see what the camera trap catching data looks like
+# ERIKA HELP
 
+now merge the full landuse with the camera IDs and save it
+
+have both be factors so it merges
 
 ```{r}
-cams <- read.csv(here("Data","AssignedSpecies_through_2023-06-13.csv"))
+landuse_by_camera2 <- merge(cams_simple, landuse_by_camera)
 ```
 
+```{r}
+write.csv(landuse_by_camera2, here("Data","landuse_covs_correct.csv"))
+```
+
+## Merging the covariates together 
+
+clearing environment for cleanliness and read in the two relevant dataframe
+
+```{r}
+rm(list = ls())
+road_density <- read.csv(here("Data","Road_density.csv"))
+landuse <- read.csv(here("Data","landuse_covs_correct.csv"))
+```
+
+sort out road density
+
+how are we going to do this
+
+1.  create new column for datatype for buffer
+2.  create function to select rows in which the entry falls into the class of a buffer
+3.  change the density column name to include buffer
+4.  remove everything but camsd and density
+5.  repeat for each buffer
+6.  merge them all together
+7.  then we can merge the roads and landuse
+
+start by creating a new column with just the buffer type using the function
+
+```{r}
+road_density$buffer <- substr(road_density$Buffer_cam, 1,3)
+```
+
+```{r}
+porcupine_f_min <- road_density %>%
+  slice(which(road_density$buffer == "EF1"))
+```
+
+and again for more
+
+```{r}
+porcupine_f_max <- road_density %>%
+  slice(which(road_density$buffer == "EF2"))
+porcupine_m_min <- road_density %>%
+  slice(which(road_density$buffer == "EM1"))
+porcupine_m_max <- road_density %>%
+  slice(which(road_density$buffer == "EM2"))       
+fisher_min <- road_density %>%
+  slice(which(road_density$buffer == "P1_"))
+fisher_max <- road_density %>%
+  slice(which(road_density$buffer == "P2_"))
+```
+
+Change the headings of the variable to reflect the buffer nature of the road density
+
+```{r}
+colnames(porcupine_f_min)[4] <- "road_density_ERDO_F_min"
+colnames(porcupine_m_min)[4] <- "road_density_ERDO_M_min"
+colnames(porcupine_f_max)[4] <- "road_density_ERDO_F_max"
+colnames(porcupine_m_max)[4] <- "road_density_ERDO_M_max"
+colnames(fisher_min)[4] <- "road_density_PEPE_min"
+colnames(fisher_max)[4] <- "road_density_PEPE_max"
+```
+
+shave down the frames
+
+```{r}
+porcupine_f_min <- porcupine_f_min %>%
+  select(3,4)
+porcupine_f_max <- porcupine_f_max %>%
+  select(3,4)
+porcupine_m_max <- porcupine_m_max %>%
+  select(3,4)
+porcupine_m_min <- porcupine_m_min %>%
+  select(3,4)
+fisher_max <- fisher_max %>%
+  select(3,4)
+fisher_min <- fisher_min %>%
+  select(3,4)
+```
+
+bring back the simple cam data
+
+```{r}
+Camera_IDs <- read.csv(here("Data","full_camera_data.csv"))
+cams_simple <- Camera_IDs %>%   select(1,12)
+```
+
+Merge
+
+```{r}
+road_densities <- merge(cams_simple,porcupine_f_min)
+road_densities <- merge(road_densities,porcupine_f_max)
+road_densities <- merge(road_densities,porcupine_m_max) 
+road_densities <- merge(road_densities,porcupine_m_min) 
+road_densities <- merge(road_densities,fisher_max)
+road_densities <- merge(road_densities,fisher_min)
+```
+
+```{r}
+covariates <- merge(landuse, road_densities)
+```
+
+road data is not in the perfect condition yet
