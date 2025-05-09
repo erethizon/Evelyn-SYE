@@ -36,6 +36,7 @@ data<-read.csv(file="Data/Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F
 ```
 
 ## Prepare Data
+
 Fix the situation for C003_SD005 where it is two different deployments. Name second deployment C003_SD0052
 
 ```{r}
@@ -67,7 +68,6 @@ data$End.Date <- mdy(data$End.Date)
 data$Photo.Date <- mdy(data$Photo.Date)
 data$Photo.Time <- as_hms(data$td.photo)
 ```
-
 
 ## Descriptive analysis
 
@@ -130,6 +130,7 @@ cameras<-rowSums(events_hh)
 ```
 
 ## Naive Occupancy
+
 Make new version of f.matrix.creator called f.matrix.creator1
 
 ```{r}
@@ -209,7 +210,6 @@ f.matrix.creator1<-function(data){
 	}
 ```
 
-
 ```{r}
 mat<-f.matrix.creator1(data) # list of matrices camera x days for each species
 # matrix of 124 x 58 - the 58 sampling units 
@@ -220,8 +220,7 @@ NAI<-naive(mat) # get naive occupancy for each species
 
 ```
 
-##Plotting
-Retrofit their acc.curve function to match with f.matrix.creator1
+##Plotting Retrofit their acc.curve function to match with f.matrix.creator1
 
 ```{r}
 # the function returns the observed species accumulation curve for a given year
@@ -240,8 +239,6 @@ acc.curve <- function(dtaframe, year) {
 }
 ```
 
-
-
 ```{r}
 # accumulation curve  
 accumulation<-acc.curve(data,2020)
@@ -254,6 +251,7 @@ ggplot(accumulation, aes(x=Camera.trap.days, y=species)) +
 ```
 
 ### Works to here
+
 Need to fix their events.hours function. Here's the code to tweak:
 
 ```{r}
@@ -270,7 +268,6 @@ events.hours <- function(dtaframe) {
     return(ev.sp)
 }
 ```
-
 
 ```{r}
 # activity pattern of species 
@@ -291,13 +288,12 @@ clock24.plot(activity_24h$SNOWSHOEHARE,clock,show.grid=T,lwd=2,line.col="red", m
 
 Getting rid of mapping as camera locations not in data
 
-
 # Chapter 6
 
 ## loading in data
 
-basically recapping stuff from chapter 5
-Let's clean up
+basically recapping stuff from chapter 5 Let's clean up
+
 ```{r}
 rm(list = ls())
 source("Code/TEAM library 1.7.R")
@@ -317,7 +313,6 @@ library(AICcmodavg)
 #library(plyr) # included in tidyverse
 #library(R2jags)
 ```
-
 
 ## Load data
 
@@ -352,12 +347,12 @@ covs
 remeber mat is cam x day 0 or 1 y/n
 
 Need column called Start.Date and End.Date in yr2009 that is POSIXct and also need genus species in a column called bin
+
 ```{r}
 yr2009$Start.Date <-as_date(ymd_hms(yr2009$Camera.Start.Date.and.Time))
 yr2009$End.Date <- as_date(ymd_hms(yr2009$Camera.End.Date.and.Time))
 yr2009$bin <- paste0(yr2009$Genus, " ", yr2009$Species)
 ```
-
 
 ```{r}
 mat.udz.09<-f.matrix.creator1(yr2009)
@@ -366,7 +361,6 @@ names(mat.udz.09) # each species has its own table
 naivetable<-naive(mat.udz.09) 
 naivetable
 ```
-
 
 ##WORKING TO HERE WITH THEIR CODE
 
