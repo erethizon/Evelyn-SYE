@@ -11,16 +11,21 @@ editor: visual
 
 ```{r}
 rm(list=ls())
-source("TEAM library 1.7.R")
+source("Code/TEAM library 1.7.R")
 library(chron) 
 library(reshape)
 library(tidyverse)
+<<<<<<< HEAD
 
 library(lubridate)
 library(hms)
 
 library("here")
 
+=======
+library(lubridate)
+library(hms)
+>>>>>>> febf99f (update data experimenting.qmd)
 library (vegan)
 library(plotrix)
 library(ggplot2) # included in tidyverse 
@@ -36,7 +41,7 @@ library(AICcmodavg)
 ## Read in the data
 
 ```{r}
-data <- read.csv(here("Data","Pre_2020_cam_data.csv"))
+data<-read.csv(file="Data/Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F)
 ```
 
 ## Prepare Data
@@ -72,7 +77,10 @@ data$End.Date <- mdy(data$End.Date)
 data$Photo.Date <- mdy(data$Photo.Date)
 data$Photo.Time <- as_hms(data$td.photo)
 ```
+<<<<<<< HEAD
 
+=======
+>>>>>>> febf99f (update data experimenting.qmd)
 
 ## Descriptive analysis
 
@@ -221,6 +229,7 @@ mat<-f.matrix.creator1(data) # list of matrices camera x days for each species
 NAI<-naive(mat) # get naive occupancy for each species
 
 
+<<<<<<< HEAD
 
 #write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.names = F)
 
@@ -240,6 +249,13 @@ write.table(NAI, file="naive_occu_2020.txt",quote=F, sep="\t",row.names = F)
 accumulation<-acc.curve(data,2020)
 ```
 >>>>>>> 9230bf0 (workshoping covariate stuff)
+=======
+#write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.names = F)
+
+```
+
+##Plotting Retrofit their acc.curve function to match with f.matrix.creator1
+>>>>>>> febf99f (update data experimenting.qmd)
 
 ```{r}
 # the function returns the observed species accumulation curve for a given year
@@ -290,6 +306,7 @@ events.hours <- function(dtaframe) {
 
 
 
+<<<<<<< HEAD
 ```{r}
 # activity pattern of species 
 #need variable that corresponds to the book's yr2009
@@ -313,30 +330,61 @@ clock24.plot(activity_24h$SNOWSHOEHARE,clock,show.grid=T,lwd=2,line.col="red", m
 ```
 
 
+=======
+Need to fix their events.hours function. Here's the code to tweak:
+>>>>>>> febf99f (update data experimenting.qmd)
 
 ```{r}
+# the function returns the matrix species by hours to be used for activity profile (it uses all the available years)
 events.hours <- function(dtaframe) {
     require(reshape)
     require(chron)
     dtaframe$ore <- trunc(dtaframe$Photo.Time, "hours")
     selvar <- subset(dtaframe, select = c(Sampling.Unit.Name, Photo.Date, bin, ore))
     ev.hr <- unique(selvar)
-    ev.hr <- rename(ev.hr, c(ore = "value"))
+    ev.hr <- ev.hr %>% rename(value = ore)
     ev.sp <- cast(ev.hr, value ~ bin, length)
     colnames(ev.sp) <- sub(" ", ".", colnames(ev.sp))
     return(ev.sp)
 }
 ```
 
+<<<<<<< HEAD
+=======
+```{r}
+# activity pattern of species 
+#need variable that corresponds to the book's yr2009
+#they use yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #Should just correspond to our data
+
+activity_24h<-events.hours(data)
+
+# example of plotting activity pattern of selected species (3 species; porcupine, fisher, snowshoehare)
+clock<-c(0:23) 
+clock24.plot(activity_24h$PORCUPINE,clock,show.grid=T,lwd=2,line.col="blue", main="Porcupine",cex.lab=0.5)
+
+par(mfrow=c(1,3),cex.lab=0.5, cex.axis=0.5)
+clock24.plot(activity_24h$PORCUPINE,clock,show.grid=T,lwd=2,line.col="green", main="Porcupine")
+clock24.plot(activity_24h$FISHER,clock,show.grid=T,lwd=2,line.col="blue", main="Fisher")
+clock24.plot(activity_24h$SNOWSHOEHARE,clock,show.grid=T,lwd=2,line.col="red", main="Snowshoe hare")
+```
+
+Getting rid of mapping as camera locations not in data
+>>>>>>> febf99f (update data experimenting.qmd)
 
 # Chapter 6
 
 ## loading in data
 
+<<<<<<< HEAD
 basically recapping stuff from chapter 5
 Let's clean up
 ```{r}
 
+=======
+basically recapping stuff from chapter 5 Let's clean up
+
+```{r}
+>>>>>>> febf99f (update data experimenting.qmd)
 rm(list = ls())
 source("Code/TEAM library 1.7.R")
 library(chron) 
@@ -354,6 +402,7 @@ library(AICcmodavg)
 #library(MuMIn)
 #library(plyr) # included in tidyverse
 #library(R2jags)
+<<<<<<< HEAD
 
 
 data1<- read.csv(here("Data","Pre_2020_cam_data.csv"))
@@ -368,17 +417,25 @@ data1<- read.csv(here("Data","Pre_2020_cam_data.csv"))
 ```
 
 
+=======
+```
+
+>>>>>>> febf99f (update data experimenting.qmd)
 ## Load data
 
 can probably skip most of them, - need to standardize
 
 ```{r}
+<<<<<<< HEAD
 
+=======
+>>>>>>> febf99f (update data experimenting.qmd)
 cov<-read.table("Data/covariates.txt", header=TRUE) # table row per sampling unit
 data <-read.csv("Data/teamexample.csv", header = TRUE)
 yr2009<-data[data$Sampling.Event =="2009.01",]
 workingcam<-which(cov$Sampling.Unit.Name %in% unique(yr2009$Sampling.Unit.Name)) # removing cameras that did not work
 cov.or<-cov[workingcam, ] # retain only working cameras in 2009
+<<<<<<< HEAD
 #we are using the cameras for all years and they are all working
 cov.num<-cov.or[,sapply(cov.or,is.numeric)]
 cov.std<-decostand(cov.num,method="standardize") #z-score normalization; according to ChatGPT: With method = "standardize", the function:
@@ -413,16 +470,35 @@ our_covs <- cov1.std # gives us what they use in the book as the covs
 #covs
 #okay... there is nothing in here. lets see what is going on
 
+=======
+#we are using the cameras for all years and they are all working
+cov.num<-cov.or[,sapply(cov.or,is.numeric)]
+cov.std<-decostand(cov.num,method="standardize") #z-score normalization; according to ChatGPT: With method = "standardize", the function:
+# 	•	Centers each variable (i.e., subtracts the mean),
+# 	•	Then scales it (i.e., divides by the standard deviation),
+# 	•	So each column ends up with a mean of 0 and a standard deviation of 1.
+# 
+# This is also known as z-score normalization.
+# 
+# Standardizing is helpful when:
+# 	•	Your variables are on different scales (e.g., one is in meters, another in kilograms),
+# 	•	You want to compare variables fairly (e.g., in PCA, clustering, or ordination),
+# 	•	You’re preparing data for many ecological or multivariate analyses in vegan.
+cov.fac<-cov.or[,sapply(cov.or,is.factor)]  # extract factor variables
+covs<-data.frame(cov.fac, cov.std)
+covs
+>>>>>>> febf99f (update data experimenting.qmd)
 ```
 
 ## Create matrices for each species
 
-Prepare Data
+remeber mat is cam x day 0 or 1 y/n
 
-Fix the situation for C003_SD005 where it is two different deployments. Name second deployment C003_SD0052
+Need column called Start.Date and End.Date in yr2009 that is POSIXct and also need genus species in a column called bin
 
 Need column called Start.Date and End.Date in yr2009 that is POSIXct and also need genus species in a column called bin
 ```{r}
+<<<<<<< HEAD
 
 yr2009$Start.Date <-as_date(ymd_hms(yr2009$Camera.Start.Date.and.Time))
 yr2009$End.Date <- as_date(ymd_hms(yr2009$Camera.End.Date.and.Time))
@@ -438,10 +514,15 @@ find<- which(data1$Cam.SD == "C003_SD005" & data1$cam.start.date == "5/10/19")
 view(data1[find,])
 data1$Cam.SD[find] <- "C003_SD0052"
 data1 %>% filter(Cam.SD =="C003_SD0052") %>% View()
+=======
+yr2009$Start.Date <-as_date(ymd_hms(yr2009$Camera.Start.Date.and.Time))
+yr2009$End.Date <- as_date(ymd_hms(yr2009$Camera.End.Date.and.Time))
+yr2009$bin <- paste0(yr2009$Genus, " ", yr2009$Species)
+>>>>>>> febf99f (update data experimenting.qmd)
 ```
-Rename Variables
 
 ```{r}
+<<<<<<< HEAD
 colnames(data1)[16] <- "Sampling.Unit.Name"
 colnames(data1)[10] <- "Sampling.Event"
 colnames(data1)[5] <- "Start.Date"
@@ -468,58 +549,24 @@ repeat the steps for preparing the data
 mat.cams<-f.matrix.creator1(data1)
 names(mat.cams) # each species has its own table 
 
+
+mat.udz.09<-f.matrix.creator1(yr2009)
+names(mat.udz.09) # each species has its own table 
+
 # I could just do this whole thing and then just export the two tables for porcupine and fisher 
-naivetable<-naive(mat.cams) 
+naivetable<-naive(mat.udz.09) 
 naivetable
 ```
 
 
-##WORKING TO HERE WITH THEIR CODE
-
 ## Case study - single species
 
 ### get new table?
-Porcupine modeling 
-
-we need to reduce the covariates data frame ro jusr the cameras that have the species ID informations we can us %>% to do so
 
 ```{r}
-good_covs <- cov1 %>% filter(Cam_SD %in% rownames(mat.cams[["PORCUPINE"]]))
-  
+Cs<-shrink(mat.udz.09[["Cercocebus sanjei"]],5)
+umCs<-unmarkedFrameOccu(y=Cs,siteCovs= covs)
 ```
-got usd down fot 344 to 76 row - we need to get down to 71 (some have more than one deployment). i should write code to 
-
-id the repeats ang get rid of ht hightr ones 
-are (C002_SD007, C021_SD0040, C028_SD001, C032_SD026, C035_SD016)
-
-reduce good covs by reducing it to just the good cams  by droppping the dupicate deployments 
-```{r}
-dump <- c("C0027", "C0064", "C0161", "C0227", "C0235")
-
-good_covs <- good_covs %>% filter(!(deployment %in% dump))
-```
-
-now we need to rename the second instantce of C003_SD005 to C003_SD005
-deployment number C0029 
-```{r}
-fix <- which(good_covs$deployment == "C0029")
-good_covs$Cam_SD[fix] <- "C003_SD0052"
-
-#now just get the numeric covariates 
-
-good_covs_num <- good_covs[,sapply(good_covs, is.numeric)]
-```
-
-now we have a set of covariates the correspond to just the deployments from 2018-2019
-
-```{r}
-ERDO <-shrink(mat.cams[["PORCUPINE"]],5)
-View(ERDO)
-umERDO<-unmarkedFrameOccu(y=ERDO,siteCovs= good_covs_num) #from the unmarked package
-```
-
-choose 10 or so covariates 
-
 
 ### Creates models for variables
 
