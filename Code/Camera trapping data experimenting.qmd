@@ -11,10 +11,11 @@ editor: visual
 
 ```{r}
 rm(list=ls())
-source("Code/TEAM library 1.7.R")
+source("TEAM library 1.7.R")
 library(chron) 
 library(reshape)
 library(tidyverse)
+library("here")
 library (vegan)
 library(plotrix)
 library(ggplot2) # included in tidyverse 
@@ -30,10 +31,11 @@ library(AICcmodavg)
 ## Read in the data
 
 ```{r}
-data<-read.csv(file="Data/Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F)
+data <- read.csv(here("Data","Pre_2020_cam_data.csv"))
 ```
 
 ## Prepare Data
+
 Fix the situation for C003_SD005 where it is two different deployments. Name second deployment C003_SD0052
 
 ```{r}
@@ -162,6 +164,7 @@ write.table(cameras, file="my_events_species.txt",quote=F, sep="\t")
 ```
 
 ## Naive Occupancy
+
 Make new version of f.matrix.creator called f.matrix.creator1
 
 ```{r}
@@ -241,7 +244,6 @@ f.matrix.creator1<-function(data){
 	}
 ```
 
-
 ```{r}
 #yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #I don't think we have to do this
 mat<-f.matrix.creator1(data) # list of matrices camera x days for each species
@@ -249,12 +251,9 @@ mat<-f.matrix.creator1(data) # list of matrices camera x days for each species
 NAI<-naive(mat) # get naive occupancy for each species
 
 
-write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.names = F)
+write.table(NAI, file="naive_occu_2020.txt",quote=F, sep="\t",row.names = F)
 
 ```
-
-
-
 
 ## (SKIP FOR NOW) Plotting
 
@@ -262,7 +261,6 @@ write.table(naive_occu_2009, file="naive_occu_2009.txt",quote=F, sep="\t",row.na
 # accumulation curve  
 accumulation<-acc.curve(data,2020)
 ```
-
 
 ```{r}
 # the function returns the observed species accumulation curve for a given year
@@ -281,8 +279,6 @@ acc.curve <- function(dtaframe, year) {
 }
 ```
 
-
-
 ```{r}
 # accumulation curve  
 accumulation<-acc.curve(data,2020)
@@ -296,12 +292,12 @@ ggplot(accumulation, aes(x=Camera.trap.days, y=species)) +
 
 ### Works to here
 
-
+```{r}
 # activity pattern of species 
 #need variable that corresponds to the book's yr2009
 #they use yr2009<-data[data$Sampling.Event =="2009.01" & data$Class=="MAMMALIA",] #Should just correspond to our data
-activity_24h<-events.hours(yr2009)
-write.table(activity_24h, file="events_24hour_2009.txt",quote=F, sep="\t",row.names = F)
+activity_24h<-events.hours(data)
+write.table(activity_24h, file="events_24hour_2020.txt",quote=F, sep="\t",row.names = F)
 
 activity_24h<-events.hours(data)
 
@@ -336,6 +332,22 @@ Ru<-ev.dd.map[,c("Rhynchocyon udzungwensis")]/max(ev.dd.map[,c("Rhynchocyon udzu
 points(ev.dd.map[,"Longitude"],ev.dd.map[,"Latitude"],pch = 21,bg=grey(1-Ru))
 ```
 
+breaking at events.hours
+
+```{r}
+events.hours <- function(dtaframe) {
+    require(reshape)
+    require(chron)
+    dtaframe$ore <- trunc(dtaframe$Photo.Time, "hours")
+    selvar <- subset(dtaframe, select = c(Sampling.Unit.Name, Photo.Date, bin, ore))
+    ev.hr <- unique(selvar)
+    ev.hr <- rename(ev.hr, c(ore = "value"))
+    ev.sp <- cast(ev.hr, value ~ bin, length)
+    colnames(ev.sp) <- sub(" ", ".", colnames(ev.sp))
+    return(ev.sp)
+}
+```
+
 # Chapter 6
 
 ## loading in data
@@ -343,7 +355,9 @@ points(ev.dd.map[,"Longitude"],ev.dd.map[,"Latitude"],pch = 21,bg=grey(1-Ru))
 basically recapping stuff from chapter 5
 
 ```{r}
-team_data<-read.csv(file="Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F) #do 
+
+data1<- read.csv(here("Data","Pre_2020_cam_data.csv"))
+#do 
 #can skip the rest in this chunk for my data 
 #iucn.full<-read.csv("IUCN.csv", sep=",",h=T)
 #iucn<-iucn.full[,c("Class","Order","Family","Genus","Species")]
@@ -357,37 +371,113 @@ team_data<-read.csv(file="Pre_2020_cam_data.csv", sep=",",h=T,stringsAsFactors=F
 can probably skip most of them, - need to standardize
 
 ```{r}
-cov<-read.table("covariates.txt", header=TRUE) # table row per sampling unit
-workingcam<-which(cov$Sampling.Unit.Name %in% unique(yr2009$Sampling.Unit.Name)) # removing cameras that did not work
-cov.or<-cov[workingcam, ] # retain only working cameras in 2009
+cov1<-read.table(here("Data","ERDO_PEPE_covariates.txt")) # table row per sampling unit
+#workingcam<-which(cov$Sampling.Unit.Name %in% unique(data$Sampling.Unit.Name)) # removing cameras that did not work
+#cov.or<-cov[workingcam, ] # retain only working cameras in 2009
 #we are using the cameras for all years and they are all working
-cov.num<-cov.or[,sapply(cov.or,is.numeric)]
-cov.std<-decostand(cov.num,method="standardize")
-cov.fac<-cov.or[,sapply(cov.or,is.factor)]  # extract factor variables
-covs<-data.frame(cov.fac, cov.std)
-covs
+#cov.num<-cov.or[,sapply(cov.or,is.numeric)]
+```
+
+
+``` {r}
+cov1.std<-decostand(cov1[,3:218],method="standardize")
+our_covs <- cov1.std # gives us what they use in the book as the covs
+#We can skip these next couple of lines because we have no factor variables
+#cov.fac<-cov.or[,sapply(cov.or,is.factor)]  # extract factor variables
+#covs<-data.frame(cov.fac, cov.std)
+#covs
+#okay... there is nothing in here. lets see what is going on
 ```
 
 ## Create matrices for each species
 
-remeber mat is cam x day 0 or 1 y/n
+Prepare Data
+
+Fix the situation for C003_SD005 where it is two different deployments. Name second deployment C003_SD0052
 
 ```{r}
-mat.udz.09<-f.matrix.creator(yr2009)
-names(mat.udz.09) # each species has its own table 
+find<- which(data1$Cam.SD == "C003_SD005" & data1$cam.start.date == "5/10/19")
+view(data1[find,])
+data1$Cam.SD[find] <- "C003_SD0052"
+data1 %>% filter(Cam.SD =="C003_SD0052") %>% View()
+```
+Rename Variables
+
+```{r}
+colnames(data1)[16] <- "Sampling.Unit.Name"
+colnames(data1)[10] <- "Sampling.Event"
+colnames(data1)[5] <- "Start.Date"
+colnames(data1)[6] <- "End.Date"
+colnames(data1)[8] <- "Photo.Date"
+colnames(data1)[9] <- "Photo.Time"
+colnames(data1)[3] <- "td.photo"
+colnames(data1)[7] <- "bin"
+```
+
+Change Dates
+
+``` {r}
+data1$Start.Date <- parse_date_time(data1$Start.Date,"mdy") # changes the date format to year-month-day
+data1$End.Date <- parse_date_time(data1$End.Date,"mdy")
+data1$td.photo <- parse_date_time(data1$td.photo, "mdy_HM")
+data1$Photo.Date <- parse_date_time(data1$Photo.Date, "mdy")
+```
+
+
+repeat the steps for preparing the data
+
+```{r}
+mat.cams<-f.matrix.creator1(data1)
+names(mat.cams) # each species has its own table 
 # I could just do this whole thing and then just export the two tables for porcupine and fisher 
-naivetable<-naive(mat.udz.09) 
+naivetable<-naive(mat.cams) 
 naivetable
 ```
 
 ## Case study - single species
 
 ### get new table?
+Porcupine modeling 
+
+we need to reduce the covariates data frame ro jusr the cameras that have the species ID informations we can us %>% to do so
 
 ```{r}
-Cs<-shrink(mat.udz.09[["Cercocebus sanjei"]],5)
-umCs<-unmarkedFrameOccu(y=Cs,siteCovs= covs)
+good_covs <- cov1 %>% filter(Cam_SD %in% rownames(mat.cams[["PORCUPINE"]]))
+  
 ```
+got usd down fot 344 to 76 row - we need to get down to 71 (some have more than one deployment). i should write code to 
+
+id the repeats ang get rid of ht hightr ones 
+are (C002_SD007, C021_SD0040, C028_SD001, C032_SD026, C035_SD016)
+
+reduce good covs by reducing it to just the good cams  by droppping the dupicate deployments 
+```{r}
+dump <- c("C0027", "C0064", "C0161", "C0227", "C0235")
+
+good_covs <- good_covs %>% filter(!(deployment %in% dump))
+```
+
+now we need to rename the second instantce of C003_SD005 to C003_SD005
+deployment number C0029 
+```{r}
+fix <- which(good_covs$deployment == "C0029")
+good_covs$Cam_SD[fix] <- "C003_SD0052"
+
+#now just get the numeric covariates 
+
+good_covs_num <- good_covs[,sapply(good_covs, is.numeric)]
+```
+
+now we have a set of covariates the correspond to just the deployments from 2018-2019
+
+```{r}
+ERDO <-shrink(mat.cams[["PORCUPINE"]],5)
+View(ERDO)
+umERDO<-unmarkedFrameOccu(y=ERDO,siteCovs= good_covs_num) #from the unmarked package
+```
+
+choose 10 or so covariates 
+
 
 ### Creates models for variables
 
