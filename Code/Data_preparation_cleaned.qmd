@@ -462,7 +462,7 @@ cams_simple <- Camera_IDs %>%
   select(1,12)
 ```
 
-## Road Density 
+## Road Density
 
 sort out road density
 
@@ -553,7 +553,7 @@ fisher_min <- fisher_min %>%
   select(4,6)
 ```
 
-## Merging covariates together 
+## Merging covariates together
 
 ```{r}
 road_densities <- merge(landuse_by_camera, porcupine_f_max, by="deployment", all=TRUE) %>%
