@@ -1,0 +1,309 @@
+---
+title: "Cam experiments based on trapping book "
+author: "Evelyn Albrecht"
+format: html
+editor: visual
+---
+
+# Chapter 6
+
+## loading in data
+
+basically recapping stuff from chapter 5 Let's clean up
+
+```{r}
+rm(list = ls())
+source("Code/TEAM library 1.7.R")
+library(chron) 
+library(reshape)
+library(tidyverse)
+library(lubridate)
+library(hms)
+library (vegan)
+library(plotrix)
+library(ggplot2) # included in tidyverse 
+#library(maptools)
+# new for chapter 6 
+library(unmarked)
+library(AICcmodavg)
+#library(MuMIn)
+#library(plyr) # included in tidyverse
+#library(R2jags)
+```
+
+## Load data
+
+can probably skip most of them, - need to standardize
+
+```{r}
+cov<-read.table("Data/covariates.txt", header=TRUE) # table row per sampling unit
+data <-read.csv("Data/teamexample.csv", header = TRUE)
+yr2009<-data[data$Sampling.Event =="2009.01",]
+workingcam<-which(cov$Sampling.Unit.Name %in% unique(yr2009$Sampling.Unit.Name)) # removing cameras that did not work
+cov.or<-cov[workingcam, ] # retain only working cameras in 2009
+#we are using the cameras for all years and they are all working
+cov.num<-cov.or[,sapply(cov.or,is.numeric)]
+cov.std<-decostand(cov.num,method="standardize") #z-score normalization; according to ChatGPT: With method = "standardize", the function:
+# 	•	Centers each variable (i.e., subtracts the mean),
+# 	•	Then scales it (i.e., divides by the standard deviation),
+# 	•	So each column ends up with a mean of 0 and a standard deviation of 1.
+# 
+# This is also known as z-score normalization.
+# 
+# Standardizing is helpful when:
+# 	•	Your variables are on different scales (e.g., one is in meters, another in kilograms),
+# 	•	You want to compare variables fairly (e.g., in PCA, clustering, or ordination),
+# 	•	You’re preparing data for many ecological or multivariate analyses in vegan.
+cov.fac<-cov.or[,sapply(cov.or,is.factor)]  # extract factor variables
+covs<-data.frame(cov.fac, cov.std)
+covs
+```
+
+##Now repeat with our data
+```{r}
+cov1<-read.table("Data/ERDO_PEPE_covariates.txt", header=TRUE) # table row per sampling unit
+data1 <-read.csv("Data/Pre_2020_cam_data.csv", header = TRUE)
+
+cov1.std<-decostand(cov1[,3:218],method="standardize") #z-score normalization; according to ChatGPT: With method = "standardize", the function:
+# 	•	Centers each variable (i.e., subtracts the mean),
+# 	•	Then scales it (i.e., divides by the standard deviation),
+# 	•	So each column ends up with a mean of 0 and a standard deviation of 1.
+# 
+# This is also known as z-score normalization.
+# 
+# Standardizing is helpful when:
+# 	•	Your variables are on different scales (e.g., one is in meters, another in kilograms),
+# 	•	You want to compare variables fairly (e.g., in PCA, clustering, or ordination),
+# 	•	You’re preparing data for many ecological or multivariate analyses in vegan.
+
+#we can skip these next couple lines because we don't have any factor variables.
+# cov.fac<-cov.or[,sapply(cov.or,is.factor)]  # extract factor variables
+# covs<-data.frame(cov.fac, cov.std)
+# covs
+
+ourcovs <- cov1.std #this gives us what they use in book as covs at line 365.
+```
+
+## Create matrices for each species
+## Prepare data as per chapter 5 
+
+## Prepare Data
+
+Fix the situation for C003_SD005 where it is two different deployments. Name second deployment C003_SD0052
+
+```{r}
+find<- which(data1$Cam.SD == "C003_SD005" & data$cam.start.date == "5/10/19")
+data1$Cam.SD[find] <- "C003_SD0052"
+#data %>% filter(Cam.SD =="C003_SD0052") %>% View()
+```
+
+### Rename Variables
+
+```{r}
+#rename columns to match TEAM example in book
+colnames(data1)[16] <- "Sampling.Unit.Name"
+colnames(data1)[10] <- "Sampling.Event"
+colnames(data1)[5] <- "Start.Date"
+colnames(data1)[6] <- "End.Date"
+colnames(data1)[8] <- "Photo.Date"
+colnames(data1)[9] <- "Photo.Time"
+colnames(data1)[3] <- "td.photo"
+colnames(data1)[7] <- "bin"
+```
+
+### Change Dates
+
+```{r}
+data1$td.photo <- mdy_hm(data1$td.photo)
+data1$Start.Date <- mdy(data1$Start.Date)
+data1$End.Date <- mdy(data1$End.Date)
+data1$Photo.Date <- mdy(data1$Photo.Date)
+data1$Photo.Time <- as_hms(data1$td.photo)
+```
+
+remeber mat is cam x day 0 or 1 y/n
+
+Now create matrix
+
+f.matrix.creator1 function:
+
+```{r}
+f.matrix.creator1<-function(data){
+	#results object
+	res<-list()
+	
+	#get the dimensions of the matrix
+	
+	#list if sanpling units
+	cams<-unique(data$Sampling.Unit.Name)
+	cams<-sort(cams)
+	rows<-length(cams)
+	#start and end dates of sampling periods
+	min<-min(data$Start.Date)
+	max<-max(data$End.Date)
+	cols<-max-min+1
+	
+	#sampling period
+	date.header<-seq(from=min,to=max, by=1)
+	mat<-matrix(NA,rows,cols,dimnames=list(cams,as.character(date.header)))
+	
+	#for all cameras, determine the open and close date and mark in the matrix
+	start.dates<-tapply(as.character(data$Start.Date),data$Sampling.Unit.Name,unique)
+	#convert to data frame
+	start.dates <- stack(start.dates) #convert to data frame
+	names(start.dates) <- c("Start.Date", "Sampling.Unit.Name")
+	
+	end.dates<-tapply(as.character(data$End.Date),data$Sampling.Unit.Name,unique)
+	end.dates <- stack(end.dates) #convert to data frame
+	names(end.dates) <- c("End.Date", "Sampling.Unit.Name")
+	
+
+	#outline the sampling periods for each camera j
+	for(j in 1:length(start.dates)){
+		#for each camera beginning and end of sampling
+	  
+		low<-which(date.header==data$Start.Date[j])
+		hi<-which(date.header==data$End.Date[j])
+		indx<-seq(from=low,to=hi)
+		mat[j,indx]<-0
+		}
+		mat.template<-mat
+				#get the species
+		species<-unique(data$bin)
+		#construct the matrix for each species i
+		for(i in 1:length(species)){
+			indx<-which(data$bin==species[i])
+			#dates and cameras when/where the species was photographed
+			dates<-data$Photo.Date[indx]
+			cameras<-data$Sampling.Unit.Name[indx]
+			dates.cameras<-data.frame(dates,cameras)
+			#unique combination of dates and cameras 
+			dates.cameras<-unique(dates.cameras)
+			#fill in the matrix
+			for(j in 1:length(dates.cameras[,1])){
+				col<-which(date.header==dates.cameras[j,1])
+				row<-which(cams==dates.cameras[j,2])
+				mat[row,col]<-1
+				}
+			mat.nas<-is.na(mat)
+			sum.nas<-apply(mat.nas,2,sum)
+			indx.nas<-which(sum.nas==rows)
+			if(length(indx.nas)>0){
+			mat<-mat[,-indx.nas]
+			}
+	
+			res<-c(res,list(mat))
+			#return the matrix to its original form
+			mat<-mat.template
+			}
+			
+		names(res)<-species
+		#res<-lapply(res,f.dum)
+		res
+	
+	}
+```
+
+
+```{r}
+mat.cams<-f.matrix.creator1(data1)
+names(mat.cams) # each species has its own table 
+# I could just do this whole thing and then just export the two tables for porcupine and fisher 
+naivetable<-naive(mat.cams) 
+naivetable
+```
+
+
+## Porcupine modeling
+We need to reduce the covariates data frame to just the cameras that have species ID information (i.e. those from 2018-2019). We can use %in% to do so, I think.
+
+```{r}
+good_covs <- cov1 %>% filter(Cam_SD %in% rownames(mat.cams[["PORCUPINE"]]) )
+```
+This got good_covs down from 344 to 76 rows, but we need 71 rows. Can see that there are some Cam_SD combos with > 1 deployment. I should write code to ID the rows with repeated Cam_SD, but there are only 4 and I'm feeling lazy.
+
+The ones that repeat are C002_SD007,  C021_SD004, C028_SD001, C032_SD026, C035_SD016 (also, C003_SD005 repeats, but not counting here because both deployments were early in the camera trapping.)
+
+First, let's reduce good_covs by filtering out those cams. To do so, we need to get rid of the second deployment for each of those cams: C0021, C0064, C0161, C0227, C0235
+
+```{r}
+dump <- c("C0027", "C0064", "C0161", "C0227", "C0235")
+
+good_covs <- good_covs %>% filter(!(deployment %in% dump))
+```
+Now we need to rename the second instance of C003_SD005 to C003_SD0052; it is deployment C0029 so we can use that.
+
+```{r}
+fix <- which(good_covs$deployment == "C0029")
+
+good_covs$Cam_SD[fix] <- "C003_SD0052"
+
+#now just get numeric covariates
+
+good_covs_num <- good_covs[,sapply(good_covs,is.numeric)]
+```
+
+Now we have a set of covariates that corresponds to just the camera deployments from 2018-2019.
+
+```{r}
+ERDO<-shrink(mat.cams[["PORCUPINE"]],5)
+view(ERDO)
+umERDO<-unmarkedFrameOccu(y=ERDO,siteCovs= good_covs_num)
+```
+Before we can create models for variables, you need to think about, of your 216 covariates, what 10 or so would be relevant to porcupines.
+
+We can for sure get rid of the PEPE columns. We can also get rid of the total areas columns (vs percent). And then consider modeling once for ERDO_F_max, once for ERDO_F_min, once for ERDO_M_max, once for ERDO_M_min
+
+Then look at colinearity of covariates. So, if covariates are highly correlated, there is no reason to keep both. Just pick one.
+
+Then think about of the remaining covariates, which, ecologically, make most sense to you as most likely and consider which covariates have low varabiabilty across cameras.  Justify your choices in the qmd.
+
+
+
+### Creates models for variables
+
+```{r}
+m0<- occu(~1~1,umERDO)
+d1<- occu(~edge~1,umERDO)
+d2<- occu(~border~1,umERDO)
+d3<- occu(~edge+border~1,umERDO)
+o1<- occu(~1~border,umERDO)
+o2<- occu(~1~habitat,umERDO)
+o3<- occu(~1~habitat+border,umERDO)
+m1<- occu(~edge~border,umERDO)         
+m2<- occu(~border~border,umERDO)
+m3<- occu(~edge+border~border,umERDO)  
+m4<- occu(~edge~habitat,umERDO)
+m5<- occu(~border~habitat,umERDO)
+m6<- occu(~edge+border~habitat,umERDO)
+m7<- occu(~edge+border~habitat+border,umERDO)
+```
+
+### Examine one model
+
+```{r}
+m1
+backTransform(linearComb(m1, coefficients = c(1, 0), type = "det")) 
+backTransform(linearComb(m1, coefficients = c(1, 0), type = "state"))
+```
+
+### Find model of best fit
+
+```{r}
+dlist<-fitList(Nullo = m0,d1=d1,d2=d2,d3=d3,o1=o1,o2=o2,o3=o3,m1=m1,m2=m2,m3=m3,m4=m4,m5=m5,m6=m6,m7=m7)
+selmod<-modSel(dlist,nullmod="Nullo")
+selmod
+```
+
+```{r}
+newhab<-data.frame(habitat=c("Deciduous","Montane"))
+pred<-predict(o2,type="state",newdata=newhab,appendData=T)
+```
+
+```{r}
+ggplot(pred,aes(x=habitat,y=Predicted))+
+  geom_point(size=4) +
+  ylab("Predicted Psi Cercocebus sanjei") +
+  theme_bw()+
+  geom_errorbar(aes(ymin=Predicted-SE, ymax=Predicted+SE), width=.2)
+```
